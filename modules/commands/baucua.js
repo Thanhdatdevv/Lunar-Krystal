@@ -3,7 +3,7 @@
         name: "baucua",
         version: "1.0.0",
         hasPermssion: 0,
-        credits: "Horizon Lucius Synthesis I",
+        credits: "Dat Thanh",
         description: "Game bầu cua có đặt cược",
         commandCategory: "Trò Chơi",
         usages: "#baucua 𝐠𝐚̀/𝐭𝐨̂𝐦/𝐛𝐚̂̀𝐮/𝐜𝐮𝐚/𝐜𝐚́/𝐧𝐚𝐢] 𝐡𝐨𝐚̣̆𝐜 [🐓/🦞/🍐/🦀/🐬/🦌] 𝐒𝐨̂́ 𝐭𝐢𝐞̂̀𝐧 𝐜𝐮̛𝐨̛̣𝐜 (𝐥𝐮̛𝐮 𝐲́ 𝐩𝐡𝐚̉𝐢 𝐭𝐫𝐞̂𝐧 𝟏𝟎𝟎$) lắc ra x1 +300$, x2 x2$, x3 x3$",
