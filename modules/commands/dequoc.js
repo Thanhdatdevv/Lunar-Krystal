@@ -1,18 +1,7 @@
-import fs from 'fs';
-import schedule from 'node-schedule';
+const fs = require("fs");
+const schedule = require("node-schedule");
 
-export const config = {
-  name: "dequoc",
-  version: "1.1.0",
-  hasPermission: 0,
-  credits: "YourName",
-  description: "Quản lý bộ lạc và nền văn minh",
-  commandCategory: "game",
-  usages: "/dequoc [tao|add|del|rename|nangcap|point|top]",
-  cooldowns: 5
-};
-
-const dataPath = './dequoc.json';
+const dataPath = __dirname + "/dequoc.json";
 
 function loadData() {
   if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({}));
@@ -23,7 +12,18 @@ function saveData(data) {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 }
 
-export async function onMessage({ event, message, args }) {
+module.exports.config = {
+  name: "dequoc",
+  version: "1.1.0",
+  hasPermission: 0,
+  credits: "YourName",
+  description: "Quản lý bộ lạc và nền văn minh",
+  commandCategory: "game",
+  usages: "/dequoc [tao|add|del|rename|nangcap|point|top]",
+  cooldowns: 5
+};
+
+module.exports.run = async function ({ event, message, args }) {
   const { senderID, mentions } = event;
   const data = loadData();
   const tribeKey = Object.keys(data).find(key => data[key].members.includes(senderID));
@@ -104,9 +104,9 @@ export async function onMessage({ event, message, args }) {
     default:
       return message.reply("Dùng: /dequoc [tao|add|del|rename|nangcap|point|top]");
   }
-}
+};
 
-export async function onStart({ api }) {
+module.exports.onLoad = () => {
   schedule.scheduleJob('0 0 * * *', () => {
     const data = loadData();
 
@@ -128,8 +128,10 @@ export async function onStart({ api }) {
       `Top bộ lạc:\n${topList}`;
 
     const threads = [...new Set(Object.values(data).flatMap(t => t.members))];
+    const api = global.api;
+    if (!api) return;
     threads.forEach(id => {
       api.sendMessage(fullMsg, id);
     });
   });
-}
+};
