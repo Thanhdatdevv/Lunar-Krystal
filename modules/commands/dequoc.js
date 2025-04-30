@@ -1,17 +1,3 @@
-const fs = require("fs");
-const schedule = require("node-schedule");
-
-const dataPath = __dirname + "/dequoc.json";
-
-function loadData() {
-  if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({}));
-  return JSON.parse(fs.readFileSync(dataPath));
-}
-
-function saveData(data) {
-  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
-}
-
 module.exports.config = {
   name: "dequoc",
   version: "1.1.0",
