@@ -12,11 +12,9 @@ const civilizations = [
   "nền văn minh world war",
   "nền văn minh hiện đại"
 ];
-
 function save() {
   fs.writeFileSync(path, JSON.stringify(tribes, null, 2));
 }
-
 module.exports = {
   config: {
     name: "dequoc",
@@ -28,11 +26,9 @@ module.exports = {
     usages: "[create|add|del|rename|point|giaitan|top|info|list|listvm]",
     cooldowns: 5
   },
-
   run: async ({ api, event, args }) => {
     const { threadID, senderID, messageID, mentions } = event;
     const cmd = args[0];
-
     switch (cmd) {
       case "create":
         if (Object.values(tribes).some(t => t.members.includes(senderID)))
@@ -106,9 +102,7 @@ Nền văn minh: ${civilizations[level] || "chưa xác định"}`, threadID, mes
           .sort((a, b) => b.point - a.point)
           .slice(0, 10)
           .map((t, i) => `${i + 1}. ${t.name} - ${t.point} điểm`);
-        return api.sendMessage("Top bộ lạc:
-" + topList.join("\n"), threadID, messageID);
-
+        return api.sendMessage("Top bộ lạc: " + topList.join("\n"), threadID, messageID);
       case "info":
         const tribeInfo = Object.values(tribes).find(t => t.members.includes(senderID));
         if (!tribeInfo) return api.sendMessage("Bạn chưa thuộc bộ lạc nào.", threadID, messageID);
@@ -118,15 +112,12 @@ Nền văn minh: ${civilizations[level] || "chưa xác định"}`, threadID, mes
           threadID,
           messageID
         );
-
       case "list":
         const allTribes = Object.values(tribes)
           .map(t => `${t.name} - ${t.point} điểm`);
         return api.sendMessage("Tất cả bộ lạc:\n" + allTribes.join("\n"), threadID, messageID);
-
       case "listvm":
         return api.sendMessage("Danh sách nền văn minh:\n" + civilizations.join("\n"), threadID, messageID);
-
       default:
         return api.sendMessage("Sai cú pháp. Dùng: create|add|del|rename|point|giaitan|top|info|list|listvm", threadID, messageID);
     }
