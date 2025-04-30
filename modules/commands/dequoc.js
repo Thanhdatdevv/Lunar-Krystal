@@ -20,7 +20,7 @@ module.exports = {
     name: "dequoc",
     version: "1.0",
     hasPermssion: 0,
-    credits: "Bạn",
+    credits: "Dat Thanh",
     description: "Quản lý bộ lạc và đế quốc",
     commandCategory: "game",
     usages: "[create|add|del|rename|point|giaitan|top|info|list|listvm]",
