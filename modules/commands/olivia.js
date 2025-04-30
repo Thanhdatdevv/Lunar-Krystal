@@ -1,4 +1,3 @@
-
 const axios = require("axios");
 const cheerio = require("cheerio");
 
@@ -6,8 +5,8 @@ module.exports.config = {
   name: "olivia",
   version: "5.2.0",
   hasPermssion: 0,
-  credits: "ChatGPT x SoundCloud",
-  description: "Olivia AI trả lời thông minh và tìm nhạc SoundCloud",
+  credits: "Dat Thanh",
+  description: "Olivia AI ",
   commandCategory: "AI",
   usages: "[olivia + câu hỏi hoặc mở nhạc]",
   cooldowns: 2
@@ -36,7 +35,7 @@ async function askGPT(message) {
     );
     return res.data.choices[0].message.content.trim().replace(/:\)\)/g, "☺️");
   } catch (error) {
-    return "Tui bị lú rồi á... thử lại sau nha ☺️";
+    return "bé hỏng hiểu gì hớt ... thử lại sau nha ☺️";
   }
 }
 
