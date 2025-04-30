@@ -1,9 +1,8 @@
-
 module.exports.config = {
   name: "olivia",
   version: "1.0.0",
   hasPermssion: 0,
-  credits: "ChatGPT",
+  credits: "Dat Thanh",
   description: "Bot Olivia AI trả lời khi được tag hoặc reply",
   commandCategory: "chatbot",
   usages: "[tin nhắn]",
