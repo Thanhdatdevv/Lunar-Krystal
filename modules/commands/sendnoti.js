@@ -1,132 +1,108 @@
-const fs = require('fs').promises; // Sử dụng fs.promises để làm việc với các phương thức không đồng bộ
-const request = require('request-promise-native'); // Sử dụng request-promise-native để hỗ trợ Promise
-
 module.exports.config = {
     name: "sendnoti",
-    version: "1.0.0",
+    version: "1.1.1",
     hasPermssion: 3,
-    credits: "TruongMini", //mode by vtuan
-    description: "Thông báo cho các nhóm",
-    commandCategory: "Admin",
-    usages: "noti [msg]",
-    cooldowns: 5,
-}
-
-let atmDir = [];
-
-const getAtm = async (atm, body) => {
-    let msg = { body: body, attachment: [] };
-    
-    for (const eachAtm of atm) {
-        try {
-            const response = await request.get(eachAtm.url);
-            const pathName = response.uri.pathname;
-            const ext = pathName.substring(pathName.lastIndexOf(".") + 1);
-            const path = `${__dirname}/cache/${eachAtm.filename}.${ext}`;
-            
-            await new Promise((resolve, reject) => {
-                response
-                    .pipe(fs.createWriteStream(path))
-                    .on("close", async () => {
-                        msg.attachment.push(await fs.createReadStream(path));
-                        atmDir.push(path);
-                        resolve();
+    credits: "N1002",
+    description: "Gửi tin nhắn đến tất cả nhóm và reply để phản hồi",
+    commandCategory: "Hệ Thống",
+    usages: "sendnoti [text]",
+    cooldowns: 2
+};
+request = require("request");
+fse = require("fs-extra");
+imageDownload = require("image-downloader");
+moment = require("moment-timezone");
+fullTime = () => moment.tz("Asia/Ho_Chi_Minh").format("HH:mm:ss || DD/MM/YYYY");
+module.exports.run = async({ api,
+    event, Users }) => {
+    const { threadID: tid, messageID: mid, senderID: sid, attachments: atms, messageReply: mR, type, body, args } = event; 
+    const allTid = global.data.allThreadID || [];
+    const atm = await type == "message_reply" ? mR.attachments : atms.length != 0 ? atms : "nofile";
+    const content = !args[1] ? "𝑐ℎ𝑖̉ 𝑐𝑜́ 𝑡𝑒̣̂𝑝" : body.slice(body.indexOf(args[1]));
+    if (!args[1] && atm == "nofile") return api.sendMessage(`==== 『 𝐄𝐑𝐎𝐋 』 ==== \n▱▱▱▱▱▱▱▱▱▱▱▱▱\n→ 𝐵𝑎̣𝑛 𝑐ℎ𝑢̛𝑎 𝑛ℎ𝑎̣̂𝑝 𝑛𝑜̣̂𝑖 𝑑𝑢𝑛𝑔\n▱▱▱▱▱▱▱▱▱▱▱▱▱\n=== 「${thu} || ${gio}」 ===`, tid, mid);
+    var msg = `[📢]→ 𝑇ℎ𝑜̂𝑛𝑔 𝑏𝑎́𝑜 𝑡𝑢̛̀ 𝐴𝑑𝑚𝑖𝑛: ${(await Users.getData(sid)).name}\n[⏱]→ 𝑇𝑖𝑚𝑒: ${fullTime()}\n[📝]→ 𝑁𝑜̣̂𝑖 𝑑𝑢𝑛𝑔: ${content}\n\n → 𝑅𝑒𝑝𝑙𝑦 đ𝑒̂̉ 𝑝ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 𝑙𝑎̣𝑖 𝐴𝑑𝑚𝑖𝑛.`
+    const uwu = atm == "nofile" ? msg : {
+        body: msg,
+        attachment: await DownLoad(atm)
+    };
+var c1 = 0, c2 = 0;
+    for (var idT of allTid) {
+      var promise = new Promise (async(r1, r2) => {
+ await api.sendMessage(uwu, idT, async(e, i) => {
+   if (e) r2(++c2); else r1(++c1)
+      return global.client.handleReply.push({
+            name: this.config.name,
+            messageID: i.messageID,
+            author: sid,
+            type: "userReply"
+        })
+      });
+    })
+  }
+promise.then(async(r) => api.sendMessage(`[✅]→ Đ𝑎̃ 𝑔𝑢̛̉𝑖 𝑡ℎ𝑜̂𝑛𝑔 𝑏𝑎́𝑜 đ𝑒̂́𝑛 ${r} 𝑛ℎ𝑜́𝑚`, tid, mid)).catch(async(err) => api.sendMessage(`[❌]→ 𝐾ℎ𝑜̂𝑛𝑔 𝑡ℎ𝑒̂̉ 𝑔𝑢̛̉𝑖 𝑡ℎ𝑜̂𝑛𝑔 𝑏𝑎́𝑜 đ𝑒̂́𝑛 ${err} 𝑛ℎ𝑜́𝑚`, tid, mid))
+};
+module.exports.handleReply = async({ api, event, handleReply: h, Users, Threads }) => {
+    const { threadID: tid, messageID: mid, senderID: sid, attachments: atms, body, type } = event;
+    const { ADMINBOT } = global.config;
+    switch (h.type) {
+        case "userReply": {
+            const atm = atms.length != 0 ? atms : "nofile";
+            var msg = `[📩]→ 𝑃ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 𝑡𝑢̛̀ 𝑈𝑠𝑒𝑟 ${(await Users.getData(sid)).name}\n[🔎]→ 𝑁ℎ𝑜́𝑚: ${(await Threads.getData(tid)).threadInfo.threadName}\n[⏱] 𝑇𝑖𝑚𝑒: ${fullTime()}\n[📝]→ 𝑁𝑜̣̂𝑖 𝑑𝑢𝑛𝑔: ${atm == "nofile" ? body : "𝐶ℎ𝑖̉ 𝑐𝑜́ 𝑡𝑒̣̂𝑝 đ𝑒̂́𝑛 𝑏𝑎̣𝑛"}\n\n→ 𝑅𝑒𝑝𝑙𝑦 đ𝑒̂̉ 𝑝ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 𝑙𝑎̣𝑖 𝑢𝑠𝑒𝑟.`
+            const uwu = atm == "nofile" ? msg : {
+                body: msg,
+                attachment: await DownLoad(atm)
+            };
+          var c1 = 0, c2 = 0;
+            for (var idA of ADMINBOT) {
+              var promise = new Promise (async(r1, r2) => {
+                await api.sendMessage(uwu, idA, async(e, i) => {
+     if (e) r2(++c2); else r1(++c1)
+                    return global.client.handleReply.push({
+                        name: this.config.name,
+                        messageID: i.messageID,
+                        author: h.author, idThread: tid, idMessage: mid, idUser: sid,
+                        type: "adminReply"
                     })
-                    .on("error", reject);
-            });
-        } catch (error) {
-            console.error("Error downloading attachment:", error);
-        }
-    }
-    
-    return msg;
-}
-
-module.exports.handleReply = async function ({ api, event, handleReply, Users, Threads }) {
-    const { threadID, messageID, senderID, body } = event;
-    let name = await Users.getNameUser(senderID);
-    switch (handleReply.type) {
-        case "noti": {
-            let text = `» Phản Hồi Từ User «\n▱▱▱▱▱▱▱▱▱▱▱▱▱\n➜ Name: ${name}\nNhóm: ${(await Threads.getInfo(threadID)).threadName || "Unknow"}\n➜ Nội dung : ${body || "không nội dung"}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\nReply để gửi lại thành viên`;
-            if (event.attachments.length > 0) {
-                text = await getAtm(event.attachments, text);
-            }
-            api.sendMessage(text, handleReply.threadID, async (err, info) => {
-                if (err) console.error("Error sending message:", err);
-                await Promise.all(atmDir.map(async (each) => {
-                    try {
-                        await fs.unlink(each);
-                    } catch (error) {
-                        console.error("Error deleting file:", error);
-                    }
-                }));
-                atmDir = [];
-                global.client.handleReply.push({
-                    name: this.config.name,
-                    type: "reply",
-                    messageID: info.messageID,
-                    messID: messageID,
-                    threadID
                 });
             });
+       }; 
+          promise.then(async(r1) => api.sendMessage(`[📨]→ Đ𝑎̃ 𝑝ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 đ𝑒̂́𝑛 𝐴𝑑𝑚𝑖𝑛 ${(await Users.getData(h.author)).name} 𝑣𝑎̀ ${+r1-1} 𝐴𝑑𝑚𝑖𝑛 𝑘ℎ𝑎́𝑐`, tid, mid)).catch(async(err) => api.sendMessage(`[❌]→ 𝐾ℎ𝑜̂𝑛𝑔 𝑡ℎ𝑒̂̉ 𝑝ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 đ𝑒̂́𝑛 ${err} 𝐴𝑑𝑚𝑖𝑛`, tid, mid))
             break;
-        }
-        case "reply": {
-            let text = `» Phản Hồi Từ Admin «\n▱▱▱▱▱▱▱▱▱▱▱▱▱\n\n➜ Name: ${name}\n➜ Nội dung : ${body}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\nreply tin nhắn này để báo về admin`;
-            if (event.attachments.length > 0) {
-                text = await getAtm(event.attachments, text);
-            }
-            api.sendMessage(text, handleReply.threadID, async (err, info) => {
-                if (err) console.error("Error sending message:", err);
-                await Promise.all(atmDir.map(async (each) => {
-                    try {
-                        await fs.unlink(each);
-                    } catch (error) {
-                        console.error("Error deleting file:", error);
-                    }
-                }));
-                atmDir = [];
-                global.client.handleReply.push({
-                    name: this.config.name,
-                    type: "noti",
-                    messageID: info.messageID,
-                    threadID
-                });
-            }, handleReply.messID);
-            break;
-        }
-    }
-}
+        };
+    case "adminReply": {
+        const atm = atms.length != 0 ? atms : "nofile";
+        var msg = `[📩]→ 𝑃ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 𝑡𝑢̛̀ 𝐴𝑑𝑚𝑖𝑛 ${(await Users.getData(sid)).name}\n[⏱]→ 𝑇𝑖𝑚𝑒: ${fullTime()}\n[📝]→ 𝑁𝑜̣̂𝑖 𝑑𝑢𝑛𝑔: ${atm == "nofile" ? body : "𝐶ℎ𝑖̉ 𝑐𝑜́ 𝑡𝑒̣̂𝑝 đ𝑒̂́𝑛 𝑏𝑎̣𝑛"}\n\n[👉]→ 𝑅𝑒𝑝𝑙𝑦 đ𝑒̂̉ 𝑝ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 𝑙𝑎̣𝑖 𝐴𝑑𝑚𝑖𝑛.`
+        const uwu = atm == "nofile" ? msg : {
+            body: msg,
+            attachment: await DownLoad(atm)
+        };
+        await api.sendMessage(uwu, h.idThread, async(e, i) => {
+            if (e) return api.sendMessage(`Error`, tid, mid);
+            else api.sendMessage(`[📨]→ Đ𝑎̃ 𝑝ℎ𝑎̉𝑛 ℎ𝑜̂̀𝑖 đ𝑒̂́𝑛 𝑈𝑠𝑒𝑟 ${(await Users.getData(h.idUser)).name} 𝑡𝑎̣𝑖 𝑛ℎ𝑜́𝑚 ${(await Threads.getData(h.idThread)).threadInfo.threadName}`, tid, mid)
+            return global.client.handleReply.push({
+                name: this.config.name,
+                messageID: i.messageID,
+                author: sid,
+                type: "userReply"
+            })
+        }, h.idMessage);
+        break;
+    };
+  }
+};
 
-module.exports.run = async function ({ api, event, args, Users }) {
-    const { threadID, messageID, senderID, messageReply } = event;
-    if (!args[0]) return api.sendMessage("Nội dung ??", threadID);
-    let allThread = global.data.allThreadID || [];
-    let can = 0, canNot = 0;
-    let text = `📢 Thông báo từ Admin: ${await Users.getNameUser(senderID)}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\n\n✉️ Nội dung: ${args.join(" ")}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\nReply để phản hồi lại Admin.`;
-    
-    if (event.type == "message_reply") {
-        text = await getAtm(messageReply.attachments, text);
+const DownLoad = async(atm) => {
+    var arr = [];
+    for (var i = 0; i < atm.length; i++) {
+        const nameUrl = request.get(atm[i].url).uri.pathname
+        const namefile = atm[i].type != "audio" ? nameUrl : nameUrl.replace(/\.mp4/g, ".m4a");
+        const path = __dirname + "/cache/" + namefile.slice(namefile.lastIndexOf("/") + 1);
+        await imageDownload.image({
+            url: atm[i].url,
+            dest: path
+        });
+        arr.push(fse.createReadStream(path));
+        fse.unlinkSync(path);
     }
-
-    for (const each of allThread) {
-        try {
-            await api.sendMessage(text, each);
-            can++;
-        } catch (err) {
-            canNot++;
-            console.error("Error sending message:", err);
-        }
-    }
-    
-    await Promise.all(atmDir.map(async (each) => {
-        try {
-            await fs.unlink(each);
-        } catch (error) {
-            console.error("Error deleting file:", error);
-        }
-    }));
-    
-    atmDir = [];
-    api.sendMessage(`Đã gửi thành công đến ${can} nhóm!\nKhông thể gửi đến ${canNot} nhóm!`, threadID);
-}
+    return arr;
+};
