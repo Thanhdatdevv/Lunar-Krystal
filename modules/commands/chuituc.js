@@ -4,10 +4,10 @@ module.exports = {
     version: "1.1",
     hasPermission: 0,
     credits: "Dat Thanh",
-    description: "Phản hồi khi người dùng chửi tục hoặc dùng dấu ?",
+    description: "Tự động phản hồi khi người dùng chửi tục hoặc dùng dấu ?",
     commandCategory: "events",
-    usages: "Dùng trong tin nhắn thường",
-    cooldowns: 1,
+    usages: "Gửi tin nhắn thường chứa từ cấm hoặc dấu hỏi",
+    cooldowns: 1
   },
 
   handleEvent: async function ({ event, message }) {
@@ -15,12 +15,11 @@ module.exports = {
     if (!text) return;
 
     const toxicWords = ["lồn", "cặc", "peter", "mary", "chem chép", "địt", "chịch", "đụ"];
-    const containsToxic = toxicWords.some(word => text.includes(word));
-    const containsQuestionMark = text.includes("?");
-
-    if (containsToxic) {
+    if (toxicWords.some(word => text.includes(word))) {
       return message.reply("Mày có văn minh văn hóa của 1 con người không??????", event.threadID, event.messageID);
-    } else if (containsQuestionMark) {
+    }
+
+    if (text.includes("?")) {
       return message.reply("Bạn bỏ ? ra bạn sẽ cute hơn ó 💗💝", event.threadID, event.messageID);
     }
   },
