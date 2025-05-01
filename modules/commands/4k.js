@@ -8,7 +8,6 @@ module.exports.config = {
   usages: "[reply/link]",
   cooldowns: 0
 };
-
 module.exports.run = async function({ api, event, args }) {
   const fs = global.nodemodule["fs-extra"];
   const axios = require('axios').default;
