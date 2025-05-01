@@ -1,27 +1,29 @@
-module.exports = { 
+module.exports = {
   config: {
     name: "chuituc",
     version: "1.1",
-    hasPermssion: 0,
+    hasPermission: 0,
     credits: "Dat Thanh",
     description: "Phản hồi khi người dùng chửi tục hoặc dùng dấu ?",
-    commandCategory: "auto",
-    usages: "Tự động phát hiện và phản hồi",
+    commandCategory: "events",
+    usages: "Dùng trong tin nhắn thường",
     cooldowns: 1,
   },
-   onChat: async function ({ message, event }) {
-    const text = event.body.toLowerCase();
-    const tid = event.threadID;
-    const mid = event.messageID;
 
-    const toxicWords = ["lồn", "cặc", "peter", "mary", "chem chép", "địt", "chịch", "đụ", "clm"];
+  handleEvent: async function ({ event, message }) {
+    const text = event.body?.toLowerCase();
+    if (!text) return;
+
+    const toxicWords = ["lồn", "cặc", "peter", "mary", "chem chép", "địt", "chịch", "đụ"];
     const containsToxic = toxicWords.some(word => text.includes(word));
     const containsQuestionMark = text.includes("?");
 
     if (containsToxic) {
-      message.reply("Mày có văn minh văn hóa của 1 con người không??????", tid, mid);
+      return message.reply("Mày có văn minh văn hóa của 1 con người không??????", event.threadID, event.messageID);
     } else if (containsQuestionMark) {
-      message.reply("Bạn bỏ ? ra bạn sẽ cute hơn ó 💗💝", tid, mid);
+      return message.reply("Bạn bỏ ? ra bạn sẽ cute hơn ó 💗💝", event.threadID, event.messageID);
     }
-  }
+  },
+
+  run: () => {}
 };
