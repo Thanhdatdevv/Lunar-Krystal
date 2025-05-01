@@ -19,7 +19,7 @@ module.exports = {
   config: {
     name: "dequoc",
     version: "1.0.0",
-    author: "ChatGPT",
+    author: "Dat Thanh",
     countDown: 5,
     role: 0,
     shortDescription: "Quản lý bộ lạc và đế quốc",
@@ -132,15 +132,13 @@ module.exports = {
       case "list": {
         const entries = Object.entries(data);
         if (!entries.length) return send("📭 Chưa có bộ lạc nào.");
-        const list = entries.map(([tid, t]) => `• ${t.name} (${t.point} điểm)`).join("
-");
+        const list = entries.map(([tid, t]) => `• ${t.name} (${t.point} điểm)`).join("\n");
         return send(`📚 Danh sách bộ lạc:
 ${list}`);
       }
 
       case "listvm": {
-        const list = civilizationLevels.map((lvl, i) => `Cấp ${i + 1}: ${lvl}`).join("
-");
+        const list = civilizationLevels.map((lvl, i) => `Cấp ${i + 1}: ${lvl}`).join("\n");
         return send(`🏛️ Các cấp độ nền văn minh:
 ${list}`);
       }
@@ -149,8 +147,7 @@ ${list}`);
         const top = Object.values(data)
           .sort((a, b) => b.point - a.point)
           .slice(0, 5);
-        let msg = "🏆 Top bộ lạc:
-";
+        let msg = "🏆 Top bộ lạc:";
         top.forEach((t, i) => {
           msg += `🥇 [${i + 1}] ${t.name} (${t.point} điểm)
 `;
@@ -185,11 +182,8 @@ cron.schedule("0 12 * * *", async () => {
     .slice(0, 5);
 
   const msg =
-    "🏆 𝗧𝗼𝗽 𝗯𝗼̣̂ 𝗹𝗮̣𝗰 𝗵𝗮̆̀𝗻𝗴 𝗻𝗴𝗮̀𝘆 (12:00 trưa)
-
-" +
-    top.map((t, i) => `🥇 [${i + 1}] ${t.name} (${t.point} điểm)`).join("
-");
+    "🏆 𝗧𝗼𝗽 𝗯𝗼̣̂ 𝗹𝗮̣𝗰 𝗵𝗮̆̀𝗻𝗴 𝗻𝗴𝗮̀𝘆 (12:00 trưa)"
+ +  top.map((t, i) => `🥇 [${i + 1}] ${t.name} (${t.point} điểm)`).join("\n");
 
   for (const t of top) {
     api.sendMessage(msg, t.threadID);
