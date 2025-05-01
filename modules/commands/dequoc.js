@@ -1,174 +1,180 @@
-const fs = require("fs-extra");
-const path = require("path");
-const cron = require("node-cron");
+// dequoc.js - Module quản lý bộ lạc và nền văn minh
 
-const filePath = path.join(__dirname, "dequoc.json");
-if (!fs.existsSync(filePath)) fs.writeJsonSync(filePath, {});
+const fs = require("fs-extra");
+const path = __dirname + "/dequoc.json";
+
+// Tạo file dữ liệu nếu chưa có
+if (!fs.existsSync(path)) fs.writeJsonSync(path, {});
 
 const civilizationLevels = [
-  "Nền văn minh cổ đại",
-  "Nền văn minh đồng - sắt",
-  "Nền văn minh trung cổ",
-  "Nền văn minh Empire",
-  "Nền văn minh khai thác",
-  "Nền văn minh World War",
-  "Nền văn minh hiện đại"
+  "⚙️ Nền văn minh cổ đại",
+  "⛏️ Nền văn minh đồng - sắt",
+  "⚔️ Nền văn minh trung cổ",
+  "🏰 Nền văn minh Empire",
+  "⛵ Nền văn minh khai thác",
+  "⚙️ Nền văn minh World War",
+  "🚀 Nền văn minh hiện đại"
 ];
 
 module.exports = {
   config: {
     name: "dequoc",
-    version: "1.0.0",
-    author: "ChatGPT",
-    countDown: 5,
-    role: 0,
-    shortDescription: "Quản lý bộ lạc và đế quốc",
-    longDescription: "Tạo và quản lý các bộ lạc, nâng cấp nền văn minh, xem top, v.v.",
-    category: "game",
-    guide: "{pn} create | add | del | rename | point | giaitan | info | list | listvm | top | nangcap"
+    version: "1.1.0",
+    hasPermission: 0,
+    credits: "Dat Thanht",
+    description: "Quản lý bộ lạc và nền văn minh.",
+    commandCategory: "Game",
+    usages: "[lệnh]",
+    cooldowns: 3
   },
 
-  onStart: async function ({ message, args, event, threadsData, usersData, api }) {
-    const { threadID, senderID } = event;
-    const data = await fs.readJson(filePath);
+  run: async function({ api, event, args }) {
+    const { threadID, messageID, senderID, mentions } = event;
+    let db = fs.readJsonSync(path);
+    const command = args[0];
 
-    const send = (msg) => api.sendMessage(msg, threadID);
+    const save = () => fs.writeJsonSync(path, db, { spaces: 2 });
 
-    const save = () => fs.writeJsonSync(filePath, data, { spaces: 2 });
-
-    const getLevelName = (point) => {
-      const level = Math.floor(point / 50);
+    function getLevelName(level) {
       return civilizationLevels[Math.min(level, civilizationLevels.length - 1)];
-    };
+    }
 
-    const cmd = args[0];
-    if (!cmd) return send("⚔️ Vui lòng chọn lệnh: create, add, del, rename, point, giaitan, info, list, listvm, top, nangcap");
-
-    const tribe = data[threadID];
-
-    switch (cmd) {
+    switch (command) {
       case "create": {
-        if (tribe) return send("❗ Nhóm này đã có bộ lạc.");
+        if (Object.values(db).find(x => x.members.includes(senderID)))
+          return api.sendMessage("⚠️ Bạn đã ở trong một bộ lạc khác.", threadID, messageID);
+
         const name = args.slice(1).join(" ") || "Bộ lạc vô danh";
-        data[threadID] = {
-          name: `${name} (${civilizationLevels[0]})`,
+        db[senderID] = {
+          name: name + ` - ${getLevelName(0)}`,
           leader: senderID,
           members: [senderID],
-          point: 0,
+          points: 0,
           level: 0
         };
         save();
-        return send(`⚒️ Bộ lạc '${name}' đã được tạo với thủ lĩnh là bạn!`);
+        return api.sendMessage(`✅ Tạo bộ lạc thành công: ${db[senderID].name}`, threadID, messageID);
       }
 
       case "add": {
-        if (!tribe) return send("❗ Nhóm chưa có bộ lạc.");
-        if (tribe.leader !== senderID) return send("❌ Chỉ thủ lĩnh mới có quyền thêm người.");
-        if (tribe.members.length >= 30) return send("🚫 Bộ lạc đã đủ 30 thành viên.");
-        const mention = Object.keys(event.mentions)[0];
-        if (!mention) return send("👉 Vui lòng tag người cần thêm.");
-        if (tribe.members.includes(mention)) return send("🔁 Thành viên đã có trong bộ lạc.");
+        const user = db[senderID];
+        if (!user) return api.sendMessage("❌ Bạn đéo phải chủ bộ lạc.", threadID, messageID);
+        const uid = Object.keys(mentions)[0];
+        if (!uid) return api.sendMessage("🔖 Vui lòng tag người cần thêm.", threadID, messageID);
+        if (user.members.length >= 30)
+          return api.sendMessage("🚫 Bộ lạc đã đủ 30 người.", threadID, messageID);
+        if (Object.values(db).some(x => x.members.includes(uid)))
+          return api.sendMessage("⚠️ Người này đã ở bộ lạc khác.", threadID, messageID);
 
-        tribe.members.push(mention);
-        tribe.point += 20;
+        user.members.push(uid);
+        user.points += 20;
         save();
-
-        const name = await usersData.getName(mention);
-        return send(`✅ Đã thêm ${name} vào bộ lạc!
-+20 điểm cho bộ lạc!`);
+        return api.sendMessage(`➕ Đã thêm ${Object.values(mentions)[0]} vào bộ lạc.
+✨ +20 điểm cho bộ lạc!`, threadID, messageID);
       }
 
       case "del": {
-        if (!tribe) return send("❗ Nhóm chưa có bộ lạc.");
-        if (tribe.leader !== senderID) return send("❌ Chỉ thủ lĩnh mới có quyền xóa người.");
-        const mention = Object.keys(event.mentions)[0];
-        if (!mention) return send("👉 Vui lòng tag người cần xóa.");
-        if (!tribe.members.includes(mention)) return send("❌ Người này không thuộc bộ lạc.");
+        const user = db[senderID];
+        if (!user) return api.sendMessage("❌ Bạn không phải chủ bộ lạc.", threadID, messageID);
+        const uid = Object.keys(mentions)[0];
+        if (!uid) return api.sendMessage("🔖 Vui lòng tag người cần xoá.", threadID, messageID);
+        if (!user.members.includes(uid))
+          return api.sendMessage("⚠️ Người này không trong bộ lạc bạn.", threadID, messageID);
 
-        tribe.members = tribe.members.filter(m => m !== mention);
+        user.members = user.members.filter(id => id !== uid);
         save();
-
-        const name = await usersData.getName(mention);
-        return send(`❌ Đã loại bỏ ${name} khỏi bộ lạc.`);
+        return api.sendMessage(`➖ Đã xoá ${Object.values(mentions)[0]} khỏi bộ lạc.`, threadID, messageID);
       }
 
       case "rename": {
-        if (!tribe) return send("❗ Nhóm chưa có bộ lạc.");
-        if (tribe.leader !== senderID) return send("❌ Chỉ thủ lĩnh mới có quyền đổi tên.");
+        const user = db[senderID];
+        if (!user) return api.sendMessage("❌ Bạn không phải chủ bộ lạc.", threadID, messageID);
         const newName = args.slice(1).join(" ");
-        if (!newName) return send("✏️ Vui lòng nhập tên mới.");
+        if (!newName) return api.sendMessage("✏️ Vui lòng nhập tên mới.", threadID, messageID);
 
-        tribe.name = `${newName} (${civilizationLevels[tribe.level]})`;
+        user.name = newName + ` - ${getLevelName(user.level)}`;
         save();
-        return send(`✅ Tên bộ lạc đã được đổi thành: ${tribe.name}`);
+        return api.sendMessage(`✏️ Đổi tên bộ lạc thành: ${user.name}`, threadID, messageID);
       }
 
       case "point": {
-        if (!tribe) return send("❗ Nhóm chưa có bộ lạc.");
-        const nextLevel = tribe.level + 1;
-        const nextPoint = (nextLevel < civilizationLevels.length) ? 50 * (nextLevel) : "Tối đa";
-        return send(`🏅 Bộ lạc: ${tribe.name}
-        ⭐ Điểm hiện tại: ${tribe.point}
-        🔼 Điểm cần để lên cấp: ${nextPoint}`);
-      }
+        const user = Object.values(db).find(x => x.members.includes(senderID));
+        if (!user) return api.sendMessage("❌ Bạn chưa tham gia bộ lạc nào.", threadID, messageID);
 
-      case "giaitan": {
-        if (!tribe) return send("❗ Nhóm chưa có bộ lạc.");
-        if (tribe.leader !== senderID) return send("❌ Chỉ thủ lĩnh mới có quyền giải tán.");
-        delete data[threadID];
-        save();
-        return send("💥 Bộ lạc đã bị giải tán.");
-      }
-
-      case "info": {
-        if (!tribe) return send("❗ Nhóm chưa có bộ lạc.");
-        const leaderName = await usersData.getName(tribe.leader);
-        return send(`📜 Tên bộ lạc: ${tribe.name}
-👑 Thủ lĩnh: ${leaderName}
-👥 Số thành viên: ${tribe.members.length}
-⭐ Điểm: ${tribe.point}`);
-      }
-
-      case "list": {
-        const entries = Object.entries(data);
-        if (!entries.length) return send("📭 Chưa có bộ lạc nào.");
-        const list = entries.map(([tid, t]) => `• ${t.name} (${t.point} điểm)`).join(" ");
-        return send(`📚 Danh sách bộ lạc:
-${list}`);
-      }
-
-      case "listvm": {
-        const list = civilizationLevels.map((lvl, i) => `Cấp ${i + 1}: ${lvl}`).join(" ");
-        return send(`🏛️ Các cấp độ nền văn minh:
-${list}`);
-      }
-
-      case "top": {
-        const top = Object.values(data)
-          .sort((a, b) => b.point - a.point)
-          .slice(0, 5);
-        let msg = "🏆 Top bộ lạc:\n";
-        top.forEach((t, i) => {
-          msg += `🥇 [${i + 1}] ${t.name} (${t.point} điểm)
-`;
-        });
-        return send(msg);
+        const need = (user.level + 1) * 50;
+        return api.sendMessage(`📊 Bộ lạc: ${user.name}
+🏅 Điểm: ${user.points} / ${need} để lên cấp tiếp theo`, threadID, messageID);
       }
 
       case "nangcap": {
-        if (!tribe) return send("❗ Nhóm chưa có bộ lạc.");
-        if (tribe.leader !== senderID) return send("❌ Chỉ thủ lĩnh mới có quyền nâng cấp.");
-        if (tribe.level >= civilizationLevels.length - 1) return send("🚀 Bộ lạc đã đạt cấp tối đa.");
-        if (tribe.point < 50 * (tribe.level + 1)) return send("❌ Chưa đủ điểm để nâng cấp.");
+        const user = db[senderID];
+        if (!user) return api.sendMessage("❌ Bạn không phải chủ bộ lạc.", threadID, messageID);
+        if (user.level >= civilizationLevels.length - 1)
+          return api.sendMessage("🏁 Đã đạt cấp tối đa.", threadID, messageID);
 
-        tribe.level++;
-        tribe.name = tribe.name.replace(/\(.*\)/, `(${civilizationLevels[tribe.level]})`);
+        const need = (user.level + 1) * 50;
+        if (user.points < need)
+          return api.sendMessage(`⚠️ Chưa đủ điểm để nâng cấp. Cần ${need} điểm.`, threadID, messageID);
+
+        user.level++;
+        user.name = user.name.split(" - ")[0] + ` - ${getLevelName(user.level)}`;
         save();
-        return send(`✨ Bộ lạc đã được nâng cấp lên: ${civilizationLevels[tribe.level]}!`);
+        return api.sendMessage(`⬆️ Bộ lạc đã nâng cấp thành công!
+Tên mới: ${user.name}`, threadID, messageID);
+      }
+
+      case "giaitan": {
+        if (!db[senderID]) return api.sendMessage("❌ Bạn không phải chủ bộ lạc.", threadID, messageID);
+        delete db[senderID];
+        save();
+        return api.sendMessage("⚠️ Bộ lạc đã bị giải tán.", threadID, messageID);
+      }
+
+      case "top": {
+        const topList = Object.values(db)
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 5)
+          .map((bl, i) => `${i + 1}. ${bl.name} - ${bl.points} điểm`)
+          .join("
+");
+        return api.sendMessage(`🏆 TOP BỘ LẠC:
+${topList}`, threadID, messageID);
+      }
+
+      case "info": {
+        const user = Object.values(db).find(x => x.members.includes(senderID));
+        if (!user) return api.sendMessage("❌ Bạn chưa tham gia bộ lạc nào.", threadID, messageID);
+
+        return api.sendMessage(
+          `ℹ️ Tên: ${user.name}
+👑 Chủ bộ lạc: ${user.leader}
+👥 Số người: ${user.members.length}
+⭐ Điểm: ${user.points}`,
+          threadID,
+          messageID
+        );
+      }
+
+      case "list": {
+        const list = Object.values(db)
+          .map(x => `${x.name} - ${x.points} điểm`)
+          .join("
+");
+        return api.sendMessage(`📜 Danh sách bộ lạc:
+${list}`, threadID, messageID);
+      }
+
+      case "listvm": {
+        const text = civilizationLevels
+          .map((name, i) => `Cấp ${i + 1}: ${name}`)
+          .join("
+");
+        return api.sendMessage(`🏛️ Cấp bậc nền văn minh:
+${text}`, threadID, messageID);
       }
 
       default:
-        return send("⚠️ Lệnh không hợp lệ.");
+        return api.sendMessage("❓ Sai cú pháp. Dùng: create, add, del, rename, point, nangcap, giaitan, top, info, list, listvm", threadID, messageID);
     }
-  },
+  }
 };
