@@ -2,12 +2,13 @@ module.exports = {
   config: {
     name: "chuituc",
     version: "1.1",
+    hasPermssion: 0,
+    credits: "Dat Thanh",
     description: "Phản hồi khi người dùng chửi tục hoặc dùng dấu ?",
     commandCategory: "auto",
     usages: "Tự động phát hiện và phản hồi",
     cooldowns: 1,
   },
-
    onChat: async function ({ message, event }) {
     const text = event.body.toLowerCase();
     const tid = event.threadID;
