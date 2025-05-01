@@ -19,7 +19,7 @@ module.exports = {
   config: {
     name: "dequoc",
     version: "1.0.0",
-    author: "Dat Thanh",
+    author: "ChatGPT",
     countDown: 5,
     role: 0,
     shortDescription: "Quản lý bộ lạc và đế quốc",
@@ -108,8 +108,8 @@ module.exports = {
         const nextLevel = tribe.level + 1;
         const nextPoint = (nextLevel < civilizationLevels.length) ? 50 * (nextLevel) : "Tối đa";
         return send(`🏅 Bộ lạc: ${tribe.name}
-⭐ Điểm hiện tại: ${tribe.point}
-🔼 Điểm cần để lên cấp: ${nextPoint}`);
+        ⭐ Điểm hiện tại: ${tribe.point}
+        🔼 Điểm cần để lên cấp: ${nextPoint}`);
       }
 
       case "giaitan": {
@@ -132,13 +132,13 @@ module.exports = {
       case "list": {
         const entries = Object.entries(data);
         if (!entries.length) return send("📭 Chưa có bộ lạc nào.");
-        const list = entries.map(([tid, t]) => `• ${t.name} (${t.point} điểm)`).join("\n");
+        const list = entries.map(([tid, t]) => `• ${t.name} (${t.point} điểm)`).join(" ");
         return send(`📚 Danh sách bộ lạc:
 ${list}`);
       }
 
       case "listvm": {
-        const list = civilizationLevels.map((lvl, i) => `Cấp ${i + 1}: ${lvl}`).join("\n");
+        const list = civilizationLevels.map((lvl, i) => `Cấp ${i + 1}: ${lvl}`).join(" ");
         return send(`🏛️ Các cấp độ nền văn minh:
 ${list}`);
       }
@@ -147,7 +147,7 @@ ${list}`);
         const top = Object.values(data)
           .sort((a, b) => b.point - a.point)
           .slice(0, 5);
-        let msg = "🏆 Top bộ lạc:";
+        let msg = "🏆 Top bộ lạc:\n";
         top.forEach((t, i) => {
           msg += `🥇 [${i + 1}] ${t.name} (${t.point} điểm)
 `;
@@ -172,20 +172,3 @@ ${list}`);
     }
   },
 };
-
-// Tự động gửi top 12:00 mỗi ngày
-cron.schedule("0 12 * * *", async () => {
-  const data = await fs.readJson(filePath);
-  const top = Object.entries(data)
-    .map(([tid, t]) => ({ threadID: tid, ...t }))
-    .sort((a, b) => b.point - a.point)
-    .slice(0, 5);
-
-  const msg =
-    "🏆 𝗧𝗼𝗽 𝗯𝗼̣̂ 𝗹𝗮̣𝗰 𝗵𝗮̆̀𝗻𝗴 𝗻𝗴𝗮̀𝘆 (12:00 trưa)"
- +  top.map((t, i) => `🥇 [${i + 1}] ${t.name} (${t.point} điểm)`).join("\n");
-
-  for (const t of top) {
-    api.sendMessage(msg, t.threadID);
-  }
-});
