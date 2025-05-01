@@ -155,18 +155,14 @@ ${topList}`, threadID, messageID);
 
       case "list": {
         const list = Object.values(db)
-          .map(x => `${x.name} - ${x.points} điểm`)
-          .join("
-");
+          .map(x => `${x.name} - ${x.points} điểm`).join(" ");
         return api.sendMessage(`📜 Danh sách bộ lạc:
 ${list}`, threadID, messageID);
       }
 
       case "listvm": {
         const text = civilizationLevels
-          .map((name, i) => `Cấp ${i + 1}: ${name}`)
-          .join("
-");
+          .map((name, i) => `Cấp ${i + 1}: ${name}`).join(" ");
         return api.sendMessage(`🏛️ Cấp bậc nền văn minh:
 ${text}`, threadID, messageID);
       }
@@ -176,3 +172,4 @@ ${text}`, threadID, messageID);
     }
   }
 };
+      
