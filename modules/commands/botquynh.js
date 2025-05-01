@@ -1,4 +1,4 @@
-module.exports = {
+module.exports = { 
   config: {
     name: "chuituc",
     version: "1.1",
@@ -8,7 +8,7 @@ module.exports = {
     cooldowns: 1,
   },
 
-  onChat: async function ({ message, event }) {
+   onChat: async function ({ message, event }) {
     const text = event.body.toLowerCase();
     const tid = event.threadID;
     const mid = event.messageID;
