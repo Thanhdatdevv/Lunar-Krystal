@@ -1,24 +1,41 @@
 module.exports = {
   config: {
     name: "chuituc",
-    version: "1.1",
+    version: "2.0",
     hasPermission: 0,
-    credits: "Dat Thanh",
-    description: "Tự động phản hồi khi người dùng chửi tục hoặc dùng dấu ?",
-    commandCategory: "events",
-    usages: "Gửi tin nhắn thường chứa từ cấm hoặc dấu hỏi",
-    cooldowns: 1
+    credits: "QuỳnhGPT",
+    description: "Phản hồi tự động khi người dùng chửi tục hoặc dùng dấu ?",
+    commandCategory: "Hệ thống",
+    usages: "Gửi tin nhắn bình thường để thử",
+    cooldowns: 1,
   },
-  handleEvent: async function ({ event, message }) {
+
+  handleEvent: async function ({ event, api }) {
     const text = event.body?.toLowerCase();
     if (!text) return;
-    const toxicWords = ["lồn", "cặc", "peter", "mary", "chem chép", "địt", "chịch", "đụ"];
-    if (toxicWords.some(word => text.includes(word))) {
-      return message.reply("Mày có văn minh văn hóa của 1 con người không??????", event.threadID, event.messageID);
+
+    const toxicWords = ["lồn", "cặc", "địt", "đụ", "chịch", "đéo", "thằng ngu", "con đĩ", "peter", "mary", "chem chép"];
+    const containsToxic = toxicWords.some(word => text.includes(word));
+    const containsQuestionMark = text.includes("?");
+
+    if (containsToxic) {
+      return api.sendMessage(
+        "Bot nhắc nhẹ: Bạn nên dùng ngôn từ lịch sự hơn nhé!", 
+        event.threadID, 
+        event.messageID
+      );
     }
-    if (text.includes("?")) {
-      return message.reply("Bạn bỏ ? ra bạn sẽ cute hơn ó 💗💝", event.threadID, event.messageID);
+
+    if (containsQuestionMark) {
+      return api.sendMessage(
+        "Bạn hỏi nhiều quá đó nha, nhẹ nhẹ thôi cho bot thở!", 
+        event.threadID, 
+        event.messageID
+      );
     }
   },
-  run: () => {}
+
+  run: async () => {
+    // Lệnh chính không làm gì cả vì đây là module dạng sự kiện
+  }
 };
