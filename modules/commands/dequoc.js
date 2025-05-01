@@ -134,9 +134,7 @@ Tên mới: ${user.name}`, threadID, messageID);
         const topList = Object.values(db)
           .sort((a, b) => b.points - a.points)
           .slice(0, 5)
-          .map((bl, i) => `${i + 1}. ${bl.name} - ${bl.points} điểm`)
-          .join("
-");
+          .map((bl, i) => `${i + 1}. ${bl.name} - ${bl.points} điểm`).join(" ");
         return api.sendMessage(`🏆 TOP BỘ LẠC:
 ${topList}`, threadID, messageID);
       }
