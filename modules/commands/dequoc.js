@@ -12,13 +12,15 @@ const civilizations = [
   "nền văn minh world war",
   "nền văn minh hiện đại"
 ];
+
 function save() {
   fs.writeFileSync(path, JSON.stringify(tribes, null, 2));
 }
+
 module.exports = {
   config: {
     name: "dequoc",
-    version: "1.0",
+    version: "1.2",
     hasPermssion: 0,
     credits: "Dat Thanh",
     description: "Quản lý bộ lạc và đế quốc",
@@ -26,9 +28,11 @@ module.exports = {
     usages: "[create|add|del|rename|point|giaitan|top|info|list|listvm]",
     cooldowns: 5
   },
+
   run: async ({ api, event, args }) => {
     const { threadID, senderID, messageID, mentions } = event;
     const cmd = args[0];
+
     switch (cmd) {
       case "create":
         if (Object.values(tribes).some(t => t.members.includes(senderID)))
@@ -55,8 +59,9 @@ module.exports = {
         if (Object.values(tribes).some(t => t.members.includes(member)))
           return api.sendMessage("Người này đã ở bộ lạc khác.", threadID, messageID);
         tribes[senderID].members.push(member);
+        tribes[senderID].point += 20;
         save();
-        return api.sendMessage(`Đã thêm ${Object.values(mentions)[0].replace("@", "")} vào bộ lạc.`, threadID, messageID);
+        return api.sendMessage(`Đã thêm ${Object.values(mentions)[0].replace("@", "")} vào bộ lạc (+20 điểm).`, threadID, messageID);
 
       case "del":
         if (!tribes[senderID]) return api.sendMessage("Bạn chưa có bộ lạc.", threadID, messageID);
@@ -102,24 +107,79 @@ Nền văn minh: ${civilizations[level] || "chưa xác định"}`, threadID, mes
           .sort((a, b) => b.point - a.point)
           .slice(0, 10)
           .map((t, i) => `${i + 1}. ${t.name} - ${t.point} điểm`);
-        return api.sendMessage("Top bộ lạc: " + topList.join("\n"), threadID, messageID);
+        return api.sendMessage("Top bộ lạc:
+" + topList.join("
+"), threadID, messageID);
+
       case "info":
         const tribeInfo = Object.values(tribes).find(t => t.members.includes(senderID));
         if (!tribeInfo) return api.sendMessage("Bạn chưa thuộc bộ lạc nào.", threadID, messageID);
         const civLevel = Math.floor(tribeInfo.point / 50);
         return api.sendMessage(
-          `Tên: ${tribeInfo.name}\nChủ: ${tribeInfo.leader}\nThành viên: ${tribeInfo.members.length}\nNền văn minh: ${civilizations[civLevel]}`,
+          `Tên: ${tribeInfo.name}
+Chủ: ${tribeInfo.leader}
+Số thành viên: ${tribeInfo.members.length}
+Điểm: ${tribeInfo.point}
+Nền văn minh: ${civilizations[civLevel]}`,
           threadID,
           messageID
         );
+
       case "list":
         const allTribes = Object.values(tribes)
           .map(t => `${t.name} - ${t.point} điểm`);
-        return api.sendMessage("Tất cả bộ lạc:\n" + allTribes.join("\n"), threadID, messageID);
-      case "listvm":
-        return api.sendMessage("Danh sách nền văn minh:\n" + civilizations.join("\n"), threadID, messageID);
+        return api.sendMessage("Tất cả bộ lạc:
+" + allTribes.join("
+"), threadID, messageID);
+
+      
+      case "nangcap":
+        const upgradeTribe = Object.values(tribes).find(t => t.members.includes(senderID));
+        if (!upgradeTribe) return api.sendMessage("Bạn chưa thuộc bộ lạc nào.", threadID, messageID);
+        const currentLevel = Math.floor(upgradeTribe.point / 50);
+        const currentLevelSaved = upgradeTribe.level || 0;
+        if (currentLevelSaved >= civilizations.length - 1)
+          return api.sendMessage("Bộ lạc đã đạt cấp tối đa.", threadID, messageID);
+        const nextLevelCost = (currentLevelSaved + 1) * 50;
+        if (upgradeTribe.point < nextLevelCost)
+          return api.sendMessage(`Cần ${nextLevelCost} điểm để nâng cấp lên "${civilizations[currentLevelSaved + 1]}".`, threadID, messageID);
+        upgradeTribe.point -= nextLevelCost;
+        upgradeTribe.level = currentLevelSaved + 1;
+        save();
+        return api.sendMessage(
+          `NÂNG CẤP THÀNH CÔNG 💹
+
+` +
+          `Tên bộ lạc: ${upgradeTribe.name}
+` +
+          `Cấp mới: ${civilizations[upgradeTribe.level]}
+` +
+          `Điểm còn lại: ${upgradeTribe.point}`,
+          threadID, messageID
+        );
+
+
+        return api.sendMessage("Danh sách nền văn minh:
+" + civilizations.join("
+"), threadID, messageID);
+
       default:
-        return api.sendMessage("Sai cú pháp. Dùng: create|add|del|rename|point|giaitan|top|info|list|listvm", threadID, messageID);
+        const menu = `====== 𝐁𝐎̣̂ 𝐋𝐀̣𝐂 & Đ𝐄̂́ 𝐐𝐔𝐎̂́𝐂 ======
+
+⚔️ create <tên>: Tạo bộ lạc
+➕ add @tag: Thêm người vào bộ lạc (+20 điểm)
+➖ del @tag: Xoá người khỏi bộ lạc
+✏️ rename <tên>: Đổi tên bộ lạc
+📊 point: Xem điểm & nền văn minh
+💥 giaitan: Giải tán bộ lạc
+🏆 top: Xem top bộ lạc
+ℹ️ info: Xem thông tin bộ lạc (số người, chủ, điểm)
+📃 list: Danh sách tất cả bộ lạc
+💹 nangcap: Nâng cấp nền văn minh
+🏛️ listvm: Danh sách nền văn minh
+
+=========================`;
+        return api.sendMessage(menu, threadID, messageID);
     }
   }
 };
