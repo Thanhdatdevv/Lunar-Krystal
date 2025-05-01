@@ -25,10 +25,9 @@ module.exports = {
     credits: "Dat Thanh",
     description: "Quản lý bộ lạc và đế quốc",
     commandCategory: "game",
-    usages: "[create|add|del|rename|point|giaitan|top|info|list|listvm]",
+    usages: "[create | add | del | rename | point | giaitan | top | info| list | listvm | nangcap ]`",
     cooldowns: 5
-  },
-
+  }
   run: async ({ api, event, args }) => {
     const { threadID, senderID, messageID, mentions } = event;
     const cmd = args[0];
@@ -107,9 +106,7 @@ Nền văn minh: ${civilizations[level] || "chưa xác định"}`, threadID, mes
           .sort((a, b) => b.point - a.point)
           .slice(0, 10)
           .map((t, i) => `${i + 1}. ${t.name} - ${t.point} điểm`);
-        return api.sendMessage("Top bộ lạc:
-" + topList.join("
-"), threadID, messageID);
+        return api.sendMessage("Top bộ lạc:"\n + topList.join("\n"), threadID, messageID);
 
       case "info":
         const tribeInfo = Object.values(tribes).find(t => t.members.includes(senderID));
@@ -128,9 +125,7 @@ Nền văn minh: ${civilizations[civLevel]}`,
       case "list":
         const allTribes = Object.values(tribes)
           .map(t => `${t.name} - ${t.point} điểm`);
-        return api.sendMessage("Tất cả bộ lạc:
-" + allTribes.join("
-"), threadID, messageID);
+        return api.sendMessage("Tất cả bộ lạc:"\n + allTribes.join("\n"), threadID, messageID);
 
       
       case "nangcap":
@@ -158,14 +153,11 @@ Nền văn minh: ${civilizations[civLevel]}`,
           threadID, messageID
         );
 
-
-        return api.sendMessage("Danh sách nền văn minh:
-" + civilizations.join("
-"), threadID, messageID);
+      case "listvm"
+        return api.sendMessage("Danh sách nền văn minh:"\n + civilizations.join("\n"), threadID, messageID);
 
       default:
         const menu = `====== 𝐁𝐎̣̂ 𝐋𝐀̣𝐂 & Đ𝐄̂́ 𝐐𝐔𝐎̂́𝐂 ======
-
 ⚔️ create <tên>: Tạo bộ lạc
 ➕ add @tag: Thêm người vào bộ lạc (+20 điểm)
 ➖ del @tag: Xoá người khỏi bộ lạc
@@ -177,7 +169,6 @@ Nền văn minh: ${civilizations[civLevel]}`,
 📃 list: Danh sách tất cả bộ lạc
 💹 nangcap: Nâng cấp nền văn minh
 🏛️ listvm: Danh sách nền văn minh
-
 =========================`;
         return api.sendMessage(menu, threadID, messageID);
     }
