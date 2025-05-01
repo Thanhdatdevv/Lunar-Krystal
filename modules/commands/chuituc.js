@@ -3,7 +3,7 @@ module.exports = {
     name: "chuituc",
     version: "2.0",
     hasPermission: 0,
-    credits: "QuỳnhGPT",
+    credits: "Dat Thanh",
     description: "Phản hồi tự động khi người dùng chửi tục hoặc dùng dấu ?",
     commandCategory: "Hệ thống",
     usages: "Gửi tin nhắn bình thường để thử",
@@ -20,7 +20,7 @@ module.exports = {
 
     if (containsToxic) {
       return api.sendMessage(
-        "Bot nhắc nhẹ: Bạn nên dùng ngôn từ lịch sự hơn nhé!", 
+        " mẹ mày văn hoá mày chó nó tha rồi hả , con mẹ mày?🖕", 
         event.threadID, 
         event.messageID
       );
@@ -28,7 +28,7 @@ module.exports = {
 
     if (containsQuestionMark) {
       return api.sendMessage(
-        "Bạn hỏi nhiều quá đó nha, nhẹ nhẹ thôi cho bot thở!", 
+        " bỏ chấm hỏi ra bạn sẽ cute hơn ó😘😘", 
         event.threadID, 
         event.messageID
       );
