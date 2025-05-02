@@ -8,7 +8,7 @@ module.exports.config = {
   name: "soi",
   version: "3.0.0",
   hasPermssion: 0,
-  credits: "Dat Thanh + ChatGPT",
+  credits: "Dat Thanh",
   description: "Sói AI gắt gỏng, hỗn láo, biết phân tích emoji và ảnh",
   commandCategory: "fun",
   usages: "/soi on | /soi off",
