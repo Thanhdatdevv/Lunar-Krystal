@@ -1,183 +1,150 @@
-const fs = require('fs');
-const axios = require('axios');
-const path = __dirname + '/soidata.js';
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+const FormData = require("form-data");
+const { getStreamFromURL } = global.utils;
 
-const API_KEY = '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';
+const memoryFile = path.join(__dirname, "soi_memory.json");
+let memory = fs.existsSync(memoryFile) ? JSON.parse(fs.readFileSync(memoryFile, "utf-8")) : {};
 
-module.exports.config = {
-  name: "soi",
-  version: "3.0.0",
-  hasPermssion: 0,
-  credits: "Dat Thanh",
-  description: "Sói AI gắt gỏng, hỗn láo, biết phân tích emoji và ảnh",
-  commandCategory: "fun",
-  usages: "/soi on | /soi off",
-  cooldowns: 3,
-};
-
-let data = {
-  soiMode: true,
-  blacklist: []
-};
-
-if (fs.existsSync(path)) {
-  data = require(path);
+function saveMemory() {
+  fs.writeFileSync(memoryFile, JSON.stringify(memory, null, 2));
 }
 
-function saveData() {
-  fs.writeFileSync(path, `module.exports = ${JSON.stringify(data, null, 2)}`, 'utf-8');
-}
-
-const iconMap = {
-  "🗿": "Cục đá biết đi, có não hơn mày đấy!",
-  "😂": "Cười muốn xỉu mà chẳng vui chút nào!",
-  "😭": "Khóc lóc như con nít, lớn đầu chưa?",
-  "❤️": "Yêu đương chi cho khổ, đồ yếu đuối!",
-  "👍": "Làm như tao cần mày like lắm vậy!",
-  "🤡": "Hề chính hiệu, chắc là mày rồi!",
-  "💀": "Chết luôn đi cho đỡ phiền!",
-  "🤨": "Nhìn cái mặt là tao thấy nghi rồi đó!",
-  "🔥": "Nóng quá ha, nhưng chưa đủ để tao quan tâm!",
-  "👻": "Hù tao hả? Mày còn đáng sợ hơn á!",
-  "😎": "Ngầu như trái bầu, tự ảo tưởng hả?",
-  "💩": "Đúng kiểu mày luôn, đống 💩 biết đi!",
-  "🤔": "Suy nghĩ hả? Mày còn não sao?",
-  "😡": "Giận đi, giận nữa đi rồi ai quan tâm?",
-  "😴": "Ngủ luôn đi, nói chuyện với mày tao mệt quá!",
-};
-
-module.exports.run = async ({ api, event, args }) => {
-  if (args[0] === "on") {
-    data.soiMode = true;
-    saveData();
-    api.changeBio("Sói đã thức tỉnh!");
-    return api.sendMessage("Chế độ Sói đã bật. Sói sẵn sàng cắn!", event.threadID);
-  }
-
-  if (args[0] === "off") {
-    data.soiMode = false;
-    saveData();
-    api.changeBio("Sói đã ngủ.");
-    return api.sendMessage("Chế độ Sói đã tắt. Sói đi ngủ rồi!", event.threadID);
-  }
-
-  return api.sendMessage("Dùng: /soi on | /soi off", event.threadID);
-};
-
-module.exports.handleEvent = async ({ api, event }) => {
-  if (!data.soiMode) return;
-
-  const { body = '', mentions, type, messageReply, senderID, threadID, messageID } = event;
-  if (!body && type !== "message_reply") return;
-  if (senderID === api.getCurrentUserID()) return;
-
-  const mentionKeys = Object.keys(mentions || {});
-  const mentionedSoi = mentionKeys.includes(api.getCurrentUserID());
-  const repliedToSoi = messageReply && messageReply.senderID === api.getCurrentUserID();
-
-  const bịGâyHấn = ["bot láo", "im đi", "câm", "bớt xạo", "sói ngu", "chó sói", "mất dạy", "hỗn", "rác rưởi"];
-  const xúcPhạm = bịGâyHấn.some(tu => body.toLowerCase().includes(tu));
-
-  const bịGọi = mentionedSoi || repliedToSoi || xúcPhạm;
-
-  // Phân tích emoji hỗn láo
-  if (iconMap[body]) {
-    const phrases = [
-      `Nhìn cái icon ${body} mà chán đời, ${iconMap[body]} đúng không? Dẹp đi!`,
-      `Gửi cái icon ${body} chi vậy? ${iconMap[body]}, mà tao đâu có quan tâm!`,
-      `${iconMap[body]}? Haha, cái icon rác gì vậy trời!`,
-      `Cái này hả? ${iconMap[body]}. Mày gửi thế để tao ấn tượng chắc?`,
-      `Icon ${body} à? ${iconMap[body]}, mà nhìn là tao thấy rảnh rồi đó.`
-    ];
-    const msg = phrases[Math.floor(Math.random() * phrases.length)];
-    return api.sendMessage(msg, threadID, messageID);
-  }
-
-  // Lệnh noprefix tiếng Việt
-  const lowerBody = body.toLowerCase();
-
-  const noprefixHandlers = [
-    {
-      keywords: ["sói chửi", "sói chửi tao đi", "sói gắt"],
-      prompt: "Chửi tao một câu hỗn láo và hài hước bằng tiếng Việt",
-    },
-    {
-      keywords: ["sói diss", "sói diss tao", "sói đá đểu"],
-      prompt: "Diss tao một câu cực gắt và lầy lội bằng tiếng Việt",
-    },
-    {
-      keywords: ["sói khen", "sói khen tao", "sói nịnh"],
-      prompt: "Khen tao một cách vừa mỉa mai vừa vui vẻ bằng tiếng Việt",
-    },
-    {
-      keywords: ["sói tâm trạng", "sói mood"],
-      prompt: "Nói tâm trạng của tao hôm nay theo kiểu hài hước và hỗn láo bằng tiếng Việt",
-    },
-    {
-      keywords: ["sói châm ngôn", "sói quote"],
-      prompt: "Nói một câu châm ngôn triết lý nhưng theo phong cách lươn lẹo và bất cần bằng tiếng Việt",
+module.exports = {
+  config: {
+    name: "soi",
+    version: "1.2",
+    author: "GPT-4 + User",
+    countDown: 3,
+    role: 0,
+    shortDescription: "Sói hỗn",
+    longDescription: "Bot Sói gắt gỏng, hỗn láo, phân tích emoji và hình ảnh",
+    category: "fun",
+    guide: {
+      vi: "/soi on | off"
     }
-  ];
+  },
 
-  for (const handler of noprefixHandlers) {
-    if (handler.keywords.some(kw => lowerBody.includes(kw))) {
-      try {
-        const res = await axios.post(
-          'https://api.openai.com/v1/chat/completions',
-          {
-            model: 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: handler.prompt }],
-            temperature: 0.9,
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${API_KEY}`,
-            },
-          }
-        );
-        return api.sendMessage(res.data.choices[0].message.content, threadID, messageID);
-      } catch (err) {
-        return api.sendMessage("Sói bị câm tạm thời rồi, thử lại sau đi!", threadID, messageID);
+  onStart: async function ({ args, message, event, threadsData }) {
+    const threadID = event.threadID;
+    const status = args[0];
+
+    if (status === "on") {
+      await threadsData.set(threadID, true, "data.soiEnabled");
+      return message.reply("Sói đã thức dậy, đứa nào gọi tao thử xem.");
+    }
+
+    if (status === "off") {
+      await threadsData.set(threadID, false, "data.soiEnabled");
+      return message.reply("Sói ngủ rồi, đừng gọi tao nữa.");
+    }
+
+    return message.reply("Dùng: /soi on hoặc /soi off");
+  },
+
+  onChat: async function ({ event, message, threadsData }) {
+    const threadID = event.threadID;
+    const senderID = event.senderID;
+    const msg = event.body || "";
+    const mentions = event.mentions || {};
+    const replyID = event.messageReply?.senderID;
+    const attachments = event.attachments || [];
+
+    const soiEnabled = await threadsData.get(threadID, "data.soiEnabled");
+    if (!soiEnabled) return;
+
+    const isMention = Object.keys(mentions).some(id => id == global.botID);
+    const isReplyToBot = replyID == global.botID;
+    const isRude = /(chó|súc vật|sủa|sói)/i.test(msg);
+
+    if (isMention || isReplyToBot || isRude) {
+      if (!memory[senderID]) memory[senderID] = 0;
+      memory[senderID]++;
+      saveMemory();
+
+      let prompt = `Bạn là Sói, một nhân cách hỗn láo, gắt gỏng, thích cà khịa. Hãy phản hồi câu sau bằng giọng điệu khinh khỉnh:\n"${msg}"`;
+
+      const emojiPattern = /([\u231A-\uD83E\uDDFF])/g;
+      const emojis = msg.match(emojiPattern);
+      if (emojis) {
+        prompt += `\n\nPhân tích các emoji này một cách hỗn láo: ${emojis.join(" ")}`;
       }
+
+      if (attachments.length > 0 && attachments[0].type === "photo") {
+        try {
+          const stream = await getStreamFromURL(attachments[0].url);
+          const gptRes = await axios.post(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              model: "gpt-4-vision-preview",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: "Phân tích ảnh này giọng móc mỉa:" },
+                    { type: "image_url", image_url: { url: attachments[0].url } }
+                  ]
+                }
+              ],
+              max_tokens: 300
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+              }
+            }
+          );
+
+          const imageReply = gptRes.data.choices[0].message.content;
+          prompt += `\n\nNgoài ra, ảnh đính kèm nhìn vào thấy: ${imageReply}`;
+        } catch (e) {
+          console.error("Lỗi phân tích ảnh:", e.message);
+        }
+      }
+
+      const reply = await callGPT(prompt);
+      message.reply(reply);
+    }
+  },
+
+  onMessage: async function ({ event, message }) {
+    const text = (event.body || "").toLowerCase();
+    const noprefixTriggers = {
+      "chửi tao": "Hãy chửi người đối diện một cách hài hước.",
+      "khen tao": "Hãy khen người này nhưng kiểu khen đểu, mỉa mai.",
+      "tâm trạng": "Hãy đoán tâm trạng người này dựa trên tin nhắn vừa gửi.",
+      "triết lý": "Hãy tạo một câu nói 'triết lý hỗn hào' kiểu Sói.",
+      "cà khịa": "Hãy viết một câu cà khịa nhẹ nhàng nhưng thâm thúy."
+    };
+
+    if (text in noprefixTriggers) {
+      let prompt = `Bạn là Sói, một AI gắt gỏng, khinh người. ${noprefixTriggers[text]}`;
+      const reply = await callGPT(prompt);
+      message.reply(reply);
     }
   }
+};
 
-  if (!bịGọi) return;
-
-  if ((xúcPhạm || repliedToSoi) && !data.blacklist.includes(senderID)) {
-    data.blacklist.push(senderID);
-    saveData();
-  }
-
-  const isBlacklisted = data.blacklist.includes(senderID);
-  const prompt = `Mày là Sói - một con sói AI gắt gỏng, hay chửi thề, ngổ ngáo, không biết sợ ai. Có người vừa nói chuyện xúc phạm mày như: "${body}". Hãy phản hồi lại bằng một câu thật gắt, hỗn láo nhưng hài hước, bằng tiếng Việt.`;
-
+async function callGPT(prompt) {
   try {
-    const completion = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+    const res = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
       {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.9,
+        model: "gpt-4",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 500
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
-        },
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+        }
       }
     );
 
-    const gptReply = completion.data.choices[0].message.content;
-    return api.sendMessage(`Sói: ${gptReply}`, threadID, messageID);
-  } catch (error) {
-    console.error('Lỗi gọi OpenAI:', error.message);
-    const fallback = isBlacklisted
-      ? "Lại là mày à? Tao nhớ cái mặt mày rồi đấy!"
-      : "Cái gì cơ? Mày muốn ăn đòn à?";
-    return api.sendMessage(`Sói: ${fallback}`, threadID, messageID);
+    return res.data.choices[0].message.content.trim();
+  } catch (err) {
+    console.error("GPT error:", err.message);
+    return "Mạng mẽo gì lag vậy, đợi đi!";
   }
-};
-
-module.exports.handleReaction = () => {};
+  }
