@@ -28,9 +28,8 @@ module.exports.run = async ({ api, event, args }) => {
       black: null
     };
     fs.writeFileSync(path, JSON.stringify(data, null, 2));
-    return api.sendMessage("Đã bắt đầu ván cờ mới. Bạn là quân Trắng.
-Người khác gõ `chess join` để chơi quân Đen.", threadID, messageID);
-  }
+    return api.sendMessage("Đã bắt đầu ván cờ mới\nBạn là quân Trắng\nNgười khác gõ `chess join` để chơi quân Đen.", threadID, messageID);
+}
 
   if (sub === "join") {
     if (!data[threadID] || data[threadID].black)
