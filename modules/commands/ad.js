@@ -22,11 +22,11 @@ module.exports = {
 
     const senderName = await Users.getNameUser(senderID);
     const replyText = 
-`Bạn gọi chồng tớ đấy à ${senderName}?
-Đây là chồng iu dấu của tớ nè:
+`Bạn gọi chủ tớ đấy à ${senderName}?
+Đây là chủ của tớ nè:
 • Tên: Lê Thành Đạt
 • Năm sinh: 2006
-• Cung: Cự Giải
+• Cung: cung khủ
 Muốn liên lạc/mua bot thì call ảnh nha!`;
 
     const videoList = [
