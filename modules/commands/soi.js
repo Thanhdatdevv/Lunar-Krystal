@@ -1,102 +1,106 @@
+const axios = require("axios");
 
-const fs = require('fs');
-const axios = require('axios');
-const path = __dirname + '/soidata.js';
+module.exports = {
+  config: {
+    name: "soi",
+    version: "1.1",
+    hasPermission: 0,
+    credits: "Sói Chat AI by bạn và ChatGPT",
+    description: "Bot sói phản ứng gắt gỏng, khinh bỉ",
+    commandCategory: "noprefix",
+    usages: "",
+    cooldowns: 3,
+  },
 
-// === THAY API KEY CỦA BẠN VÀO DÒNG DƯỚI ===
-const API_KEY = 'YOUR_OPENAI_API_KEY_HERE';
+  handleEvent: async function ({ event, api }) {
+    const { threadID, messageID, body, senderID, type, attachments } = event;
+    if (!body && !attachments.length) return;
+    const input = body?.toLowerCase() || "";
+    const reply = msg => api.sendMessage(msg, threadID, messageID);
 
-module.exports.config = {
-  name: "soi",
-  version: "2.0.0",
-  hasPermssion: 0,
-  credits: "ChatGPT + Tùy chỉnh bởi bạn",
-  description: "Sói AI gắt gỏng, phản ứng khi bị rep, nhắc tên, hoặc xúc phạm",
-  commandCategory: "fun",
-  usages: "/soi on | /soi off",
-  cooldowns: 3,
+    // 1. Emoji phân tích khinh bỉ
+    const iconGatGong = {
+      "🗿": "Cái mặt đá câm lặng này... đúng kiểu giả vờ ngầu chứ thật ra trống rỗng.",
+      "💀": "Đầu lâu? À, trí tuệ bạn chắc đã chết từ lâu rồi.",
+      "🥶": "Lạnh giá hả? Chắc là lạnh vì không ai thương.",
+      "🤡": "Mặc đồ hề chi nữa, bạn sống đúng với nghề rồi.",
+      "🫠": "Tan chảy? Như lòng tự trọng bạn vậy.",
+      "😐": "Cái mặt này hợp với mấy người vô cảm như bạn đấy.",
+      "😒": "Ánh mắt đầy thất vọng… giống như khi bạn soi gương mỗi sáng.",
+      "😎": "Ngầu? Bạn đang cosplay người có ích à?",
+      "😩": "Thở dài hả? Tao cũng thở dài khi thấy bạn gõ phím đấy.",
+      "🙄": "Đảo mắt? Mắt bạn nên đảo khỏi cuộc đời người khác thì hơn.",
+      "😡": "Giận dữ hả? Tức vì bị vạch trần à?",
+    };
+
+    if (Object.keys(iconGatGong).includes(input.trim())) {
+      return reply(iconGatGong[input.trim()]);
+    }
+
+    // 2. Phân tích ảnh
+    if (attachments.length > 0 && attachments[0].type === "photo") {
+      const prompt = "Hãy nhận xét về một bức ảnh người dùng gửi với phong cách khinh bỉ, gắt gỏng như một con sói.";
+      const result = await callOpenAI(prompt);
+      return reply(result);
+    }
+
+    // 3. Các lệnh noprefix
+    if (input.includes("sói chửi")) {
+      const prompt = "Chửi người dùng bằng phong cách gắt gỏng và khinh bỉ như một con sói, trong 1-2 câu.";
+      const result = await callOpenAI(prompt);
+      return reply(result);
+    }
+
+    if (input.includes("sói diss")) {
+      const prompt = "Roast người dùng với phong cách chua cay, gắt gỏng và hài hước như sói.";
+      const result = await callOpenAI(prompt);
+      return reply(result);
+    }
+
+    if (input.includes("khen tao đi")) {
+      const prompt = "Khen người dùng theo kiểu mỉa mai, gắt gỏng và khinh bỉ như một con sói.";
+      const result = await callOpenAI(prompt);
+      return reply(result);
+    }
+
+    if (input.includes("tâm trạng tao sao")) {
+      const prompt = "Phân tích tâm trạng người dùng và trả lời với giọng điệu gắt gỏng, lạnh lùng như một con sói.";
+      const result = await callOpenAI(prompt);
+      return reply(result);
+    }
+
+    if (input.includes("châm ngôn sói")) {
+      const prompt = "Tạo một câu châm ngôn phong cách sói, mang tính khinh bỉ nhưng sâu sắc.";
+      const result = await callOpenAI(prompt);
+      return reply(result);
+    }
+  },
+
+  run: async function () {
+    // Không dùng vì là noprefix
+  }
 };
 
-let data = {
-  soiMode: true,
-  blacklist: []
-};
-
-if (fs.existsSync(path)) {
-  data = require(path);
-}
-
-function saveData() {
-  fs.writeFileSync(path, `module.exports = ${JSON.stringify(data, null, 2)}`, 'utf-8');
-}
-
-module.exports.run = async ({ api, event, args }) => {
-  if (args[0] === "on") {
-    data.soiMode = true;
-    saveData();
-    api.changeBio("Sói đã thức tỉnh!");
-    return api.sendMessage("Chế độ Sói đã bật. Sói sẵn sàng cắn!", event.threadID);
-  }
-
-  if (args[0] === "off") {
-    data.soiMode = false;
-    saveData();
-    api.changeBio("Sói đã ngủ.");
-    return api.sendMessage("Chế độ Sói đã tắt. Sói đi ngủ rồi!", event.threadID);
-  }
-
-  return api.sendMessage("Dùng: /soi on | /soi off", event.threadID);
-};
-
-module.exports.handleEvent = async ({ api, event }) => {
-  if (!data.soiMode) return;
-
-  const { body, mentions, type, messageReply, senderID } = event;
-  if (!body && type !== "message_reply") return;
-
-  const mentionKeys = Object.keys(mentions || {});
-  const mentionedSoi = mentionKeys.some(uid => uid === api.getCurrentUserID());
-  const repliedToSoi = messageReply && messageReply.senderID === api.getCurrentUserID();
-
-  const bịGâyHấn = ["bot láo", "im đi", "câm", "bớt xạo", "sói ngu", "chó sói", "mất dạy", "hỗn", "rác rưởi"];
-  const xúcPhạm = bịGâyHấn.some(tu => body?.toLowerCase().includes(tu));
-
-  const bịGọi = mentionedSoi || repliedToSoi || xúcPhạm;
-  if (!bịGọi) return;
-
-  if ((xúcPhạm || repliedToSoi) && !data.blacklist.includes(senderID)) {
-    data.blacklist.push(senderID);
-    saveData();
-  }
-
-  const isBlacklisted = data.blacklist.includes(senderID);
-  const prompt = `Mày là Sói - một con sói AI gắt gỏng, hay chửi thề, ngổ ngáo, không biết sợ ai. Có người vừa nói chuyện xúc phạm mày như: "${body}". Hãy phản hồi lại bằng một câu thật gắt, hỗn láo nhưng hài hước, bằng tiếng Việt.`;
-
+// Hàm gọi OpenAI
+async function callOpenAI(prompt) {
   try {
-    const completion = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
       {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.9,
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 100,
+        temperature: 0.8,
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
+          Authorization: `Bearer YOUR_API_KEY`, // <-- THAY API KEY TẠI ĐÂY
+          "Content-Type": "application/json",
         },
       }
     );
-
-    const gptReply = completion.data.choices[0].message.content;
-    return api.sendMessage(`Sói: ${gptReply}`, event.threadID);
-  } catch (error) {
-    console.error('Lỗi gọi OpenAI:', error.message);
-    const fallback = isBlacklisted
-      ? "Lại là mày à? Tao nhớ cái mặt mày rồi đấy!"
-      : "Cái gì cơ? Mày muốn ăn đòn à?";
-    return api.sendMessage(`Sói: ${fallback}`, event.threadID);
+    return response.data.choices[0].message.content.trim();
+  } catch (e) {
+    return "Tao bực quá nên không thèm trả lời!";
   }
-};
-
-module.exports.handleReaction = () => {};
+}
