@@ -137,7 +137,7 @@ async function callGPT(prompt) {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+          Authorization: `Bearer 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 ${process.env.OPENAI_API_KEY}`
         }
       }
     );
@@ -147,4 +147,4 @@ async function callGPT(prompt) {
     console.error("GPT error:", err.message);
     return "Mạng mẽo gì lag vậy, đợi đi!";
   }
-  }
+        }
