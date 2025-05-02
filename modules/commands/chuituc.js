@@ -1,7 +1,7 @@
 module.exports = {
   config: {
     name: "chuituc",
-    version: "2.0",
+    version: "2.5",
     hasPermission: 0,
     credits: "Dat Thanh",
     description: "Phản hồi tự động khi người dùng chửi tục hoặc dùng dấu ?",
@@ -14,13 +14,18 @@ module.exports = {
     const text = event.body?.toLowerCase();
     if (!text) return;
 
-    const toxicWords = ["lồn", "cặc", "địt", "đụ", "chịch", "đéo", "thằng ngu", "con đĩ", "peter", "mary", "chem chép"];
+    const toxicWords = [
+      "lồn", "lon", "cặc", "cac", "địt", "djt", "đụ", 
+      "chịch", "đéo", "thằng ngu", "con đĩ", "peter", 
+      "mary", "chem chép", "đĩ", "vú", "dú"
+    ];
+    
     const containsToxic = toxicWords.some(word => text.includes(word));
     const containsQuestionMark = text.includes("?");
 
     if (containsToxic) {
       return api.sendMessage(
-        " mẹ mày văn hoá mày chó nó tha rồi hả , con mẹ mày?🖕", 
+        "Dcm văn hoá m chó tha à", 
         event.threadID, 
         event.messageID
       );
@@ -28,7 +33,7 @@ module.exports = {
 
     if (containsQuestionMark) {
       return api.sendMessage(
-        " bỏ chấm hỏi ra bạn sẽ cute hơn ó😘😘", 
+        "Bạn bỏ ? sẽ cute hơn nhiều á 😘", 
         event.threadID, 
         event.messageID
       );
@@ -36,6 +41,6 @@ module.exports = {
   },
 
   run: async () => {
-    // Lệnh chính không làm gì cả vì đây là module dạng sự kiện
+    // Module dạng sự kiện
   }
 };
