@@ -1,34 +1,32 @@
-const adminUID = "61561400514605"; // Thay bằng UID thật của admin nếu cần
-
 module.exports = {
   config: {
     name: "ad",
-    version: "1.0",
+    version: "2.0",
     hasPermission: 0,
-    credits: "DatThanh",
-    description: "Tự động phản hồi khi nhắc đến admin",
+    credits: "GPT Rewrite for Dat",
+    description: "Tự động phản hồi khi nhắc đến tên admin",
     commandCategory: "Hệ thống",
     usages: "",
     cooldowns: 0
   },
 
   handleEvent: async function ({ event, api, Users }) {
-    const { body, threadID, messageID, mentions, senderID } = event;
+    const { body, threadID, messageID, senderID } = event;
     if (!body) return;
 
     const text = body.toLowerCase();
-    const mentionMatch = mentions && Object.keys(mentions).includes(adminUID);
-    const nameMatch = ["đạt", "dat", "thanhdat", "datthanh"].some(keyword => text.includes(keyword));
+    const nameKeywords = ["đạt", "dat", "thanhdat", "datthanh"];
+    const matched = nameKeywords.some(keyword => text.includes(keyword));
 
-    if (!mentionMatch && !nameMatch) return;
+    if (!matched) return;
 
     const senderName = await Users.getNameUser(senderID);
-    const replyText =
-`Bạn gọi tên chủ tớ đấy à ${senderName}?
-Đây là chủ iu của tớ nè:
+    const replyText = 
+`Bạn gọi chồng tớ đấy à ${senderName}?
+Đây là chồng iu dấu của tớ nè:
 • Tên: Lê Thành Đạt
 • Năm sinh: 2006
-• Cung: cung khủ
+• Cung: Cự Giải
 Muốn liên lạc/mua bot thì call ảnh nha!`;
 
     const videoList = [
@@ -46,6 +44,6 @@ Muốn liên lạc/mua bot thì call ảnh nha!`;
   },
 
   run: async function () {
-    // Không dùng trực tiếp
+    // Không dùng lệnh trực tiếp
   }
 };
