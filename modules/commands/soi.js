@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "soi",
-  version: "1.2.0",
+  version: "1.3.0",
   hasPermission: 0,
   credits: "GPT-4 + Bạn chỉnh sửa",
   description: "Sói hỗn láo: chửi nhẹ, phản ứng sai chính tả, xúc phạm, rep khinh bỉ, khịa khi thu hồi ảnh/video",
@@ -55,11 +55,26 @@ const wrongSpellings = [
   /\bdag\s/g, /\bc0\b/g, /\b0\b/g
 ];
 
+const callWords = ["sói", "chó", "dog", "wolf", "sói hoang", "sói sủa"];
+
+const callReplies = [
+  "Sủa ai đó? Gọi tên tao mà không cúng tổ tiên à?",
+  "Tao là Sói đây, muốn gâu gâu hay muốn gặm?",
+  "Gọi tao làm gì? Không thấy bận cào nát não mày à?",
+  "Đang ngủ nghe gọi tên, tưởng có thịt, ai dè là mày.",
+  "Chó cái gì? Mày là giống tao hả?",
+  "Sói nè, có việc thì nói nhanh kẻo tao cắn.",
+  "Ai gọi sói thế? Tao đây. Tới công chuyện chưa?"
+];
+
 module.exports.handleEvent = async function ({ event, api }) {
   try {
     const { threadID, messageID, senderID, body, type, messageReply } = event;
 
-    // 1. Tin nhắn bị thu hồi
+    // Bỏ qua tin nhắn của bot
+    if (senderID === api.getCurrentUserID()) return;
+
+    // Tin nhắn bị thu hồi
     if (event.type === "message_unsend" && global?.logMessage?.[event.messageID]) {
       const info = global.logMessage[event.messageID];
       const { senderID, threadID, attachments } = info;
@@ -84,7 +99,7 @@ module.exports.handleEvent = async function ({ event, api }) {
     if (!body) return;
     const lowerBody = body.toLowerCase();
 
-    // 2. Từ ngữ thô tục
+    // Từ ngữ thô tục
     for (let keyword in reactionMap) {
       if (lowerBody.includes(keyword)) {
         const [emoji, replyText] = reactionMap[keyword];
@@ -94,7 +109,7 @@ module.exports.handleEvent = async function ({ event, api }) {
       }
     }
 
-    // 3. Từ khóa mê gái
+    // Từ khóa mê gái
     for (let flirt of flirtKeywords) {
       if (lowerBody.includes(flirt)) {
         return api.sendMessage(
@@ -104,7 +119,7 @@ module.exports.handleEvent = async function ({ event, api }) {
       }
     }
 
-    // 4. Sai chính tả phổ biến
+    // Sai chính tả phổ biến
     for (let regex of wrongSpellings) {
       if (regex.test(lowerBody)) {
         return api.sendMessage(
@@ -114,10 +129,18 @@ module.exports.handleEvent = async function ({ event, api }) {
       }
     }
 
-    // 5. Rep người khác
+    // Rep người khác
     if (type === "message_reply" && messageReply?.senderID !== api.getCurrentUserID()) {
       const random = repResponses[Math.floor(Math.random() * repResponses.length)];
       return api.sendMessage(random, threadID, messageID);
+    }
+
+    // Gọi tên "Sói", "chó", v.v...
+    for (let word of callWords) {
+      if (lowerBody.includes(word)) {
+        const random = callReplies[Math.floor(Math.random() * callReplies.length)];
+        return api.sendMessage(random, threadID, messageID);
+      }
     }
 
   } catch (err) {
