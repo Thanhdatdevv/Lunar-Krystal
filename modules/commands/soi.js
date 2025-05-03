@@ -29,11 +29,10 @@ module.exports.config = {
   version: "1.1.0",
   hasPermission: 0,
   credits: "GPT-4 + Bạn chỉnh sửa",
-  description: "Sói hỗn láo, phản ứng khi bị rep, nhắc tên hoặc bị xúc phạm",
-  commandCategory: "fun",
+  description: "Sói hỗn láo",
+  commandCategory: "",
   usages: "[on | off]",
   cooldowns: 3,
-  envConfig: {}
 };
 
 module.exports.run = async function ({ args, message, event, threadsData }) {
@@ -153,26 +152,4 @@ module.exports.handleEvent = async function ({ event, message, threadsData, api 
         console.log("Không đặt được biệt danh:", err.message);
       }
     }
-  }
-};
-
-async function callGemini(input) {
-  try {
-    const res = await axios.post("https://your-gemini-api.com/ai", input);
-    return res.data;
-  } catch (err) {
-    console.error("Gemini lỗi:", err.message);
-    return {};
-  }
-}
-
-async function uploadCodeToMocky(code) {
-  try {
-    const res = await axios.post("https://api.mocky.io/api/mock", code, {
-      headers: { "Content-Type": "text/plain" }
-    });
-    return res.data.link || "Không tạo được link.";
-  } catch {
-    return "Lỗi upload code.";
-  }
-}
+  };
