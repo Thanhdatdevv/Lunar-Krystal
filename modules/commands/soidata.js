@@ -1,5 +1,4 @@
-
-module.exports = {
-  soiMode: true,
-  blacklist: []
-};
+{
+  "SOI_STATUS": {},
+  "THU_DAI": {}
+}
