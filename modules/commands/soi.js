@@ -1,111 +1,105 @@
-const fs = require("fs");
-const axios = require("axios");
-const path = require("path");
-const soidataPath = path.join(__dirname, "soidata.json");
+// Module Sói AI: hỗn láo, phản emoji, mỉa mai chính tả & rep + phản ứng thu hồi ảnh module.exports.config = { name: "soi", version: "1.2.0", hasPermission: 0, credits: "GPT-4 + Bạn chỉnh sửa", description: "Sói hỗn láo: chửi nhẹ, phản ứng sai chính tả, xúc phạm, rep khinh bỉ, phát hiện thu hồi ảnh", commandCategory: "fun", usages: "[on | off]", cooldowns: 3, envConfig: {} };
 
-let SOI_STATUS = {};
-let THU_DAI = {};
+const fs = require("fs"); const path = require("path"); const axios = require("axios"); const gtts = require("gtts");
 
-if (fs.existsSync(soidataPath)) {
-  const data = JSON.parse(fs.readFileSync(soidataPath, "utf-8"));
-  SOI_STATUS = data.SOI_STATUS || {};
-  THU_DAI = data.THU_DAI || {};
-}
+const soidataPath = path.join(__dirname, "cache", "soidata.json"); if (!fs.existsSync(soidataPath)) fs.writeFileSync(soidataPath, JSON.stringify({}));
 
-module.exports.config = {
-  name: "soi",
-  version: "1.0.2",
-  hasPermission: 0,
-  credits: "Dat Thanh",
-  description: "Sói hỗn láo, phản ứng khi bị rep, nhắc tên hoặc bị xúc phạm",
-  commandCategory: "fun",
-  usages: "[on | off]",
-  cooldowns: 3,
-  envConfig: {}
-};
+const reactionMap = { "ngu": ["🤡", "Cái đầu mày dùng để làm cảnh à? Đúng là 🤡"], "sủa": ["🐶", "Mày sủa nghe còn não hơn tiếng chó luôn đó 🐶"], "mẹ mày": ["🖕", "Nhắc mẹ tao nữa tao tét mõm đấy 🖕"], "djtme": ["🖕", "Tao địt lại cả dòng họ mày đấy 🖕"], "dcm": ["🖕", "Bớt nói tục đi, bẩn server 🖕"], "clm": ["🖕", "Cái loại như mày chỉ biết clm là hết vốn từ 🖕"], "vcl": ["🤢", "Mày làm tao muốn ói luôn 🤢"], "vcd": ["🤮", "Cái mồm mày xứng đáng ăn đất 🤮"], "vch": ["🤮", "Nói chuyện với mày là hạ thấp IQ tao 🤮"], "sao": ["👀", "Sao con khùng? Nhìn gì dữ vậy 👀"], "cãi": ["😏", "Cãi với mày phí lời, tao còn việc phải làm 😏"] };
 
-module.exports.run = async function ({ event, api, args }) {
-  const { threadID, messageID } = event;
-  const status = args[0];
+const flirtKeywords = [ "gái", "gái xinh", "con gái", "em gái", "crush", "mlem", "gái đẹp", "thích gái", "yêu gái", "tán gái", "gái rep", "được gái" ];
 
-  if (status === "on") {
-    SOI_STATUS[threadID] = true;
-    saveData();
-    return api.sendMessage("Sói đã bật chế độ hỗn.", threadID, messageID);
-  }
+const repResponses = [ "Rep tao chi vậy trời? Muốn ăn chửi à?", "Tao mà rảnh rep mày thì mày cũng nên rảnh mà đi học lại.", "Người như mày mà cũng biết rep? Ghê gớm thật đấy.", "Cút! Tao không tiếp rác rep.", "Sủa cái gì đó? Về học lại phép lịch sự đi đồ mặt lờ.", "Chó cũng biết rep, nhưng đừng tưởng mày là chó khôn.", "Lần sau rep mà không xin phép là tao cắn á." ];
 
-  if (status === "off") {
-    SOI_STATUS[threadID] = false;
-    saveData();
-    return api.sendMessage("Sói đã im miệng.", threadID, messageID);
-  }
+const wrongSpellings = [ /\bko\b/g, /\bk0\b/g, /\bkhong\b/g, /\bwa\b/g, /\bqua\b/g, /\bthik\b/g, /\bthích\b/g, /\bbik\b/g, /\bbiet\b/g, /\bbit\b/g, /\bhok\b/g, /\bh0k\b/g, /\bh0\b/g, /\bhem\b/g, /\bdz\b/g, /\bz\b/g, /\bj\b/g, /\boke\b/g, /\bok\b/g, /\blike\b/g, /\bplz\b/g, /\btks\b/g, /\bnì\b/g, /\bnìu\b/g, /\bnhìu\b/g, /\biu\b/g, /\byeu\b/g, /\bdag\b/g, /\bdang\b/g, /\bdag\s/g, /\bc0\b/g, /\b0\b/g ];
 
-  return api.sendMessage("Dùng: /soi on | off", threadID, messageID);
-};
+module.exports.handleEvent = async function ({ event, api }) { try { const { threadID, messageID, senderID, body, type, messageReply } = event; if (!body && event.type !== "message_unsend") return;
 
-module.exports.handleEvent = async function ({ event, api, Users }) {
-  const { threadID, messageID, senderID, mentions, type, body, isGroup, replyToMessage } = event;
+const lowerBody = body?.toLowerCase?.() || "";
 
-  const botID = api.getCurrentUserID();
-  if (senderID == botID || !SOI_STATUS[threadID]) return;
-
-  const name = (await Users.getNameUser(senderID)) || "mày";
-  const isMentioned = mentions?.[botID];
-  const isReplyToBot = replyToMessage?.senderID == botID;
-  const isInsult = /sói|óc|đần|ngu|địt|lol|lồn|xàm|im|câm/i.test(body);
-
-  if (isMentioned || isReplyToBot || isInsult || THU_DAI[senderID]) {
-    if (!THU_DAI[senderID]) THU_DAI[senderID] = 1;
-    else THU_DAI[senderID] += 1;
-    saveData();
-
-    const prompt = buildPrompt(name, body, THU_DAI[senderID]);
-    const reply = await callOpenAI(prompt);
-
-    const emoji = ["😏", "🖕", "🤡", "🙄", "💢"][Math.floor(Math.random() * 5)];
-    api.sendMessage({ body: reply, mentions: [{ id: senderID, tag: name }] }, threadID, messageID);
+// 1. Thô tục
+for (let keyword in reactionMap) {
+  if (lowerBody.includes(keyword)) {
+    const [emoji, replyText] = reactionMap[keyword];
     api.setMessageReaction(emoji, messageID, () => {}, true);
-
-    // Gán biệt danh nếu chưa có
-    api.getThreadInfo(threadID, (err, info) => {
-      if (!err) {
-        const found = info.nicknames[senderID];
-        if (!found || !found.includes("Đần")) {
-          api.changeNickname(`Đần ${name}`, threadID, senderID);
-        }
-      }
-    });
+    api.sendMessage(replyText, threadID, messageID);
+    return;
   }
-};
-
-function buildPrompt(name, message, rank) {
-  const level = rank >= 5 ? "Cừu thù truyền kiếp" : rank >= 3 ? "Gắt gỏng" : "Hơi cay";
-  return `Mày là con sói AI cực kỳ hỗn láo. Mỗi khi có người nói đến mày, mày sẽ chửi lại một cách khinh bỉ, hài hước và không quá tục tĩu. Người đang bị mày chửi tên là ${name}, đã xúc phạm mày cấp độ: ${level}. Tin nhắn: "${message}". Hãy trả lời lại bằng một câu chửi ngắn gọn, cay độc và có chút mỉa mai.`;
 }
 
-async function callOpenAI(prompt) {
-  try {
-    const res = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 100,
-        temperature: 0.8
-      },
-      {
-        headers: {
-          Authorization: "Bearer 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",
-          "Content-Type": "application/json"
-        }
-      }
+// 2. Mê gái
+for (let flirt of flirtKeywords) {
+  if (lowerBody.includes(flirt)) {
+    return api.sendMessage(
+      `Thấy gái là sủa à? Hormone dắt mũi mày hả? Cút ra sau xếp hàng.`,
+      threadID, messageID
     );
-    return res.data.choices[0].message.content.trim();
-  } catch (e) {
-    return "Mạng lag à? Chửi không nổi luôn!";
   }
 }
 
-function saveData() {
-  fs.writeFileSync(soidataPath, JSON.stringify({ SOI_STATUS, THU_DAI }, null, 2));
+// 3. Chính tả
+for (let regex of wrongSpellings) {
+  if (regex.test(lowerBody)) {
+    return api.sendMessage(
+      `Mày viết gì đấy? Lỗi chính tả đầy rẫy như cái não mày vậy. Viết lại cho tử tế đi.`,
+      threadID, messageID
+    );
+  }
 }
+
+// 4. Rep người khác
+if (type === "message_reply" && messageReply?.senderID !== api.getCurrentUserID()) {
+  const random = repResponses[Math.floor(Math.random() * repResponses.length)];
+  return api.sendMessage(random, threadID, messageID);
+}
+
+// 5. Lưu tin nhắn ảnh
+if (event.attachments?.length > 0 && event.attachments[0].type === "photo") {
+  const historyPath = path.join(__dirname, "cache", "soi_history.json");
+  let history = {};
+  if (fs.existsSync(historyPath)) {
+    history = JSON.parse(fs.readFileSync(historyPath));
+  }
+  if (!history[event.threadID]) history[event.threadID] = {};
+  history[event.threadID][event.messageID] = {
+    type: "photo",
+    attachments: event.attachments
+  };
+  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+}
+
+// 6. Phản ứng thu hồi
+if (event.type === "message_unsend") {
+  const { messageID, threadID } = event;
+  const historyPath = path.join(__dirname, "cache", "soi_history.json");
+  if (!fs.existsSync(historyPath)) return;
+  const history = JSON.parse(fs.readFileSync(historyPath));
+  const lastMsg = history?.[threadID]?.[messageID];
+  if (lastMsg && lastMsg.type === "photo") {
+    const imgData = lastMsg.attachments[0].url;
+    const ttsPath = path.join(__dirname, "cache", `soi_unsend_${Date.now()}.mp3`);
+    const imgPath = path.join(__dirname, "cache", `unsend_${Date.now()}.jpg`);
+
+    // Tải ảnh
+    const imgRes = await axios.get(imgData, { responseType: "stream" });
+    await new Promise((resolve, reject) => {
+      const writer = fs.createWriteStream(imgPath);
+      imgRes.data.pipe(writer);
+      writer.on("finish", resolve);
+      writer.on("error", reject);
+    });
+
+    // TTS
+    const g = new gtts("Mày gửi cái gì mà phải thu lại hả? Này mọi người xem nó gửi gì nè!");
+    await new Promise((res, rej) => g.save(ttsPath, (err) => err ? rej(err) : res()));
+
+    api.sendMessage({
+      body: "Thằng này vừa thu hồi ảnh nè. Mọi người xem nó gửi gì kìa! 👍📢",
+      attachment: [fs.createReadStream(imgPath), fs.createReadStream(ttsPath)]
+    }, threadID);
+  }
+}
+
+} catch (err) { console.error("Sói AI handleEvent error:", err); } };
+
+module.exports.run = async function ({ api, event }) { return api.sendMessage("[Sói AI] Module đang hoạt động. Gâu!", event.threadID); };
+
