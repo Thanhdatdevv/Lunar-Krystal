@@ -1,155 +1,111 @@
-const axios = require("axios");
 const fs = require("fs");
+const axios = require("axios");
 const path = require("path");
-const FormData = require("form-data");
-const { getStreamFromURL } = global.utils;
+const soidataPath = path.join(__dirname, "soidata.json");
 
-const dataFile = path.join(__dirname, "soidata.json");
-let memory = fs.existsSync(dataFile) ? JSON.parse(fs.readFileSync(dataFile, "utf-8")) : {};
+let SOI_STATUS = {};
+let THU_DAI = {};
 
-function saveMemory() {
-  fs.writeFileSync(dataFile, JSON.stringify(memory, null, 2));
+if (fs.existsSync(soidataPath)) {
+  const data = JSON.parse(fs.readFileSync(soidataPath, "utf-8"));
+  SOI_STATUS = data.SOI_STATUS || {};
+  THU_DAI = data.THU_DAI || {};
 }
-
-const insults = [
-  "Tao không rảnh đâu mà ngồi nghe mày lảm nhảm!",
-  "Mày bị ngơ à? Não để quên ở đâu rồi?",
-  "Nói chuyện đàng hoàng coi, không tao cắn à!",
-  "Cái thứ như mày mà cũng dám lên tiếng à?",
-  "Đọc tin nhắn mày mà tao muốn tắt bot luôn đấy!",
-  "Tao là sói, không phải giúp việc cho mày!",
-  "Cút! À nhầm, tạm biệt nhẹ nhàng cho mày khỏi sốc!",
-  "Tao tưởng mày im luôn rồi, ai ngờ vẫn còn gáy được!",
-  "Mày hỏi vậy mà không thấy nhục à?",
-  "Tao thề, nếu ngu là tội, mày chắc chung thân!"
-];
 
 module.exports.config = {
   name: "soi",
-  version: "1.1.0",
+  version: "1.0.2",
   hasPermission: 0,
-  credits: "GPT-4 + Bạn chỉnh sửa",
-  description: "Sói hỗn láo",
-  commandCategory: "",
+  credits: "Dat Thanh",
+  description: "Sói hỗn láo, phản ứng khi bị rep, nhắc tên hoặc bị xúc phạm",
+  commandCategory: "fun",
   usages: "[on | off]",
   cooldowns: 3,
+  envConfig: {}
 };
 
-module.exports.run = async function ({ args, message, event, threadsData }) {
-  const threadID = event.threadID;
+module.exports.run = async function ({ event, api, args }) {
+  const { threadID, messageID } = event;
   const status = args[0];
 
   if (status === "on") {
-    await threadsData.set(threadID, true, "data.soiEnabled");
-    return message.reply("Sói đã dậy rồi. Đứa nào gọi thử xem.");
+    SOI_STATUS[threadID] = true;
+    saveData();
+    return api.sendMessage("Sói đã bật chế độ hỗn.", threadID, messageID);
   }
 
   if (status === "off") {
-    await threadsData.set(threadID, false, "data.soiEnabled");
-    return message.reply("Sói ngủ rồi. Đừng phiền.");
+    SOI_STATUS[threadID] = false;
+    saveData();
+    return api.sendMessage("Sói đã im miệng.", threadID, messageID);
   }
 
-  return message.reply("Dùng: /soi on hoặc /soi off");
+  return api.sendMessage("Dùng: /soi on | off", threadID, messageID);
 };
 
-module.exports.handleEvent = async function ({ event, message, threadsData, api }) {
-  const threadID = event.threadID;
-  const senderID = event.senderID;
-  const msg = event.body || "";
-  const mentions = event.mentions || {};
-  const replyID = event.messageReply?.senderID;
-  const attachments = event.attachments || [];
+module.exports.handleEvent = async function ({ event, api, Users }) {
+  const { threadID, messageID, senderID, mentions, type, body, isGroup, replyToMessage } = event;
 
-  const soiEnabled = await threadsData.get(threadID, "data.soiEnabled");
-  if (!soiEnabled) return;
+  const botID = api.getCurrentUserID();
+  if (senderID == botID || !SOI_STATUS[threadID]) return;
 
-  const rude = /\b(dcm|dm|địt mẹ|lồn|cặc|súc vật|chó)\b/i;
-  const isRude = rude.test(msg);
-  const isReplyToBot = replyID == global.botID;
-  const isMention = Object.keys(mentions).includes(global.botID);
+  const name = (await Users.getNameUser(senderID)) || "mày";
+  const isMentioned = mentions?.[botID];
+  const isReplyToBot = replyToMessage?.senderID == botID;
+  const isInsult = /sói|óc|đần|ngu|địt|lol|lồn|xàm|im|câm/i.test(body);
 
-  if (isRude || isReplyToBot || isMention) {
-    if (!memory[senderID]) memory[senderID] = { count: 0, name: "", thulai: true };
-    memory[senderID].count++;
-    saveMemory();
+  if (isMentioned || isReplyToBot || isInsult || THU_DAI[senderID]) {
+    if (!THU_DAI[senderID]) THU_DAI[senderID] = 1;
+    else THU_DAI[senderID] += 1;
+    saveData();
 
-    const emojiPattern = /([\u231A-\uD83E\uDDFF])/g;
-    const emojis = msg.match(emojiPattern);
+    const prompt = buildPrompt(name, body, THU_DAI[senderID]);
+    const reply = await callOpenAI(prompt);
 
-    let prompt = `Bạn là Sói, AI hỗn láo. Trả lời câu sau:\n"${msg}"`;
-    if (emojis) prompt += `\n\nPhân tích emoji: ${emojis.join(" ")}`;
+    const emoji = ["😏", "🖕", "🤡", "🙄", "💢"][Math.floor(Math.random() * 5)];
+    api.sendMessage({ body: reply, mentions: [{ id: senderID, tag: name }] }, threadID, messageID);
+    api.setMessageReaction(emoji, messageID, () => {}, true);
 
-    // Phân tích ảnh
-    if (attachments.length > 0 && attachments[0].type === "photo") {
-      try {
-        const stream = await getStreamFromURL(attachments[0].url);
-        const form = new FormData();
-        form.append("file", stream, { filename: "image.jpg" });
-        form.append("model", "gpt-4-vision-preview");
-
-        const gptRes = await axios.post(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            model: "gpt-4-vision-preview",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: "Phân tích ảnh giọng hỗn hào:" },
-                  { type: "image_url", image_url: { url: attachments[0].url } }
-                ]
-              }
-            ],
-            max_tokens: 500
-          },
-          {
-            headers: {
-              Authorization: `Bearer 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`
-            }
-          }
-        );
-
-        const imageDesc = gptRes.data.choices[0].message.content;
-        prompt += `\n\nMô tả ảnh: ${imageDesc}`;
-      } catch (err) {
-        console.error("GPT Ảnh lỗi:", err.message);
+    // Gán biệt danh nếu chưa có
+    api.getThreadInfo(threadID, (err, info) => {
+      if (!err) {
+        const found = info.nicknames[senderID];
+        if (!found || !found.includes("Đần")) {
+          api.changeNickname(`Đần ${name}`, threadID, senderID);
+        }
       }
-    }
-
-    const geminiResponse = await callGemini({
-      content: msg,
-      senderID,
-      threadID,
-      id_cua_bot: global.botID,
-      mentionedUserIDs: Object.keys(mentions),
-      has_attachments: attachments.length > 0
     });
+  }
+};
 
-    const replyText = geminiResponse.content?.text || insults[Math.floor(Math.random() * insults.length)];
-    await message.reply(replyText);
+function buildPrompt(name, message, rank) {
+  const level = rank >= 5 ? "Cừu thù truyền kiếp" : rank >= 3 ? "Gắt gỏng" : "Hơi cay";
+  return `Mày là con sói AI cực kỳ hỗn láo. Mỗi khi có người nói đến mày, mày sẽ chửi lại một cách khinh bỉ, hài hước và không quá tục tĩu. Người đang bị mày chửi tên là ${name}, đã xúc phạm mày cấp độ: ${level}. Tin nhắn: "${message}". Hãy trả lời lại bằng một câu chửi ngắn gọn, cay độc và có chút mỉa mai.`;
+}
 
-    if (geminiResponse.reaction?.status && geminiResponse.reaction.emoji) {
-      api.setMessageReaction(geminiResponse.reaction.emoji, event.messageID, () => {}, true);
-    }
-
-    if (geminiResponse.code_generation?.status) {
-      const code = geminiResponse.code_generation.code;
-      const filename = geminiResponse.code_generation.filename;
-      const lang = geminiResponse.code_generation.language;
-      const link = await uploadCodeToMocky(code);
-      await message.reply(`Đây là code ${lang} của mày:\nTên file: ${filename}\n${link}`);
-    }
-
-    // Đặt biệt danh nếu đủ điều kiện
-    if (memory[senderID].count >= 3 && memory[senderID].thulai) {
-      try {
-        memory[senderID].thulai = false;
-        const name = `Đồ Gáy ${memory[senderID].count}`;
-        api.changeNickname(name, threadID, senderID);
-        await message.reply(`Tao đặt biệt danh mới cho mày là "${name}" nhé.`);
-        saveMemory();
-      } catch (err) {
-        console.log("Không đặt được biệt danh:", err.message);
+async function callOpenAI(prompt) {
+  try {
+    const res = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-4",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 100,
+        temperature: 0.8
+      },
+      {
+        headers: {
+          Authorization: "Bearer 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",
+          "Content-Type": "application/json"
+        }
       }
-    }
-  };
+    );
+    return res.data.choices[0].message.content.trim();
+  } catch (e) {
+    return "Mạng lag à? Chửi không nổi luôn!";
+  }
+}
+
+function saveData() {
+  fs.writeFileSync(soidataPath, JSON.stringify({ SOI_STATUS, THU_DAI }, null, 2));
+}
