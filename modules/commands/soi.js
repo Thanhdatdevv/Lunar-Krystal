@@ -4,16 +4,29 @@ const path = require("path");
 const FormData = require("form-data");
 const { getStreamFromURL } = global.utils;
 
-const memoryFile = path.join(__dirname, "soidata.json"); // Đổi tên file
-let memory = fs.existsSync(memoryFile) ? JSON.parse(fs.readFileSync(memoryFile, "utf-8")) : {};
+const dataFile = path.join(__dirname, "soidata.json");
+let memory = fs.existsSync(dataFile) ? JSON.parse(fs.readFileSync(dataFile, "utf-8")) : {};
 
 function saveMemory() {
-  fs.writeFileSync(memoryFile, JSON.stringify(memory, null, 2));
+  fs.writeFileSync(dataFile, JSON.stringify(memory, null, 2));
 }
+
+const insults = [
+  "Tao không rảnh đâu mà ngồi nghe mày lảm nhảm!",
+  "Mày bị ngơ à? Não để quên ở đâu rồi?",
+  "Nói chuyện đàng hoàng coi, không tao cắn à!",
+  "Cái thứ như mày mà cũng dám lên tiếng à?",
+  "Đọc tin nhắn mày mà tao muốn tắt bot luôn đấy!",
+  "Tao là sói, không phải giúp việc cho mày!",
+  "Cút! À nhầm, tạm biệt nhẹ nhàng cho mày khỏi sốc!",
+  "Tao tưởng mày im luôn rồi, ai ngờ vẫn còn gáy được!",
+  "Mày hỏi vậy mà không thấy nhục à?",
+  "Tao thề, nếu ngu là tội, mày chắc chung thân!"
+];
 
 module.exports.config = {
   name: "soi",
-  version: "1.0.0",
+  version: "1.1.0",
   hasPermission: 0,
   credits: "GPT-4 + Bạn chỉnh sửa",
   description: "Sói hỗn láo, phản ứng khi bị rep, nhắc tên hoặc bị xúc phạm",
@@ -23,24 +36,24 @@ module.exports.config = {
   envConfig: {}
 };
 
-module.exports.onStart = async function ({ args, message, event, threadsData }) {
+module.exports.run = async function ({ args, message, event, threadsData }) {
   const threadID = event.threadID;
   const status = args[0];
 
   if (status === "on") {
     await threadsData.set(threadID, true, "data.soiEnabled");
-    return message.reply("Sói đã thức. Gọi nó mà coi.");
+    return message.reply("Sói đã dậy rồi. Đứa nào gọi thử xem.");
   }
 
   if (status === "off") {
     await threadsData.set(threadID, false, "data.soiEnabled");
-    return message.reply("Sói ngủ rồi. Cấm gọi nó.");
+    return message.reply("Sói ngủ rồi. Đừng phiền.");
   }
 
   return message.reply("Dùng: /soi on hoặc /soi off");
 };
 
-module.exports.onChat = async function ({ event, message, threadsData, usersData, api }) {
+module.exports.handleEvent = async function ({ event, message, threadsData, api }) {
   const threadID = event.threadID;
   const senderID = event.senderID;
   const msg = event.body || "";
@@ -53,22 +66,21 @@ module.exports.onChat = async function ({ event, message, threadsData, usersData
 
   const rude = /\b(dcm|dm|địt mẹ|lồn|cặc|súc vật|chó)\b/i;
   const isRude = rude.test(msg);
-  const isReplyToBot = event.messageReply?.senderID == global.botID;
+  const isReplyToBot = replyID == global.botID;
   const isMention = Object.keys(mentions).includes(global.botID);
 
   if (isRude || isReplyToBot || isMention) {
-    if (!memory[senderID]) memory[senderID] = { count: 0, nickname: null };
+    if (!memory[senderID]) memory[senderID] = { count: 0, name: "", thulai: true };
     memory[senderID].count++;
     saveMemory();
 
-    let prompt = `Bạn là Sói AI, khinh người và hỗn hào. Trả lời cực kỳ gắt với nội dung:\n"${msg}"`;
-
-    // Emoji
     const emojiPattern = /([\u231A-\uD83E\uDDFF])/g;
     const emojis = msg.match(emojiPattern);
+
+    let prompt = `Bạn là Sói, AI hỗn láo. Trả lời câu sau:\n"${msg}"`;
     if (emojis) prompt += `\n\nPhân tích emoji: ${emojis.join(" ")}`;
 
-    // Ảnh
+    // Phân tích ảnh
     if (attachments.length > 0 && attachments[0].type === "photo") {
       try {
         const stream = await getStreamFromURL(attachments[0].url);
@@ -97,48 +109,49 @@ module.exports.onChat = async function ({ event, message, threadsData, usersData
             }
           }
         );
+
         const imageDesc = gptRes.data.choices[0].message.content;
         prompt += `\n\nMô tả ảnh: ${imageDesc}`;
       } catch (err) {
-        console.error("Lỗi GPT ảnh:", err.message);
+        console.error("GPT Ảnh lỗi:", err.message);
       }
     }
 
-    // Gửi prompt sang Gemini
     const geminiResponse = await callGemini({
-      time: new Date().toLocaleString(),
-      senderName: event.senderID,
       content: msg,
-      threadID,
       senderID,
+      threadID,
       id_cua_bot: global.botID,
       mentionedUserIDs: Object.keys(mentions),
       has_attachments: attachments.length > 0
     });
 
-    const replyText = geminiResponse.content?.text || "Sói lười không thèm chửi.";
+    const replyText = geminiResponse.content?.text || insults[Math.floor(Math.random() * insults.length)];
     await message.reply(replyText);
 
-    // React emoji
     if (geminiResponse.reaction?.status && geminiResponse.reaction.emoji) {
       api.setMessageReaction(geminiResponse.reaction.emoji, event.messageID, () => {}, true);
     }
 
-    // Đổi biệt danh nếu muốn
-    if (geminiResponse.hanh_dong?.doi_biet_danh?.status) {
-      const newName = geminiResponse.hanh_dong.doi_biet_danh.biet_danh_moi;
-      api.changeNickname(newName, threadID, senderID);
-      memory[senderID].nickname = newName;
-      saveMemory();
-    }
-
-    // Gửi code nếu có
     if (geminiResponse.code_generation?.status) {
       const code = geminiResponse.code_generation.code;
       const filename = geminiResponse.code_generation.filename;
       const lang = geminiResponse.code_generation.language;
       const link = await uploadCodeToMocky(code);
       await message.reply(`Đây là code ${lang} của mày:\nTên file: ${filename}\n${link}`);
+    }
+
+    // Đặt biệt danh nếu đủ điều kiện
+    if (memory[senderID].count >= 3 && memory[senderID].thulai) {
+      try {
+        memory[senderID].thulai = false;
+        const name = `Đồ Gáy ${memory[senderID].count}`;
+        api.changeNickname(name, threadID, senderID);
+        await message.reply(`Tao đặt biệt danh mới cho mày là "${name}" nhé.`);
+        saveMemory();
+      } catch (err) {
+        console.log("Không đặt được biệt danh:", err.message);
+      }
     }
   }
 };
@@ -148,7 +161,7 @@ async function callGemini(input) {
     const res = await axios.post("https://your-gemini-api.com/ai", input);
     return res.data;
   } catch (err) {
-    console.error("Gemini API fail:", err.message);
+    console.error("Gemini lỗi:", err.message);
     return {};
   }
 }
@@ -159,7 +172,7 @@ async function uploadCodeToMocky(code) {
       headers: { "Content-Type": "text/plain" }
     });
     return res.data.link || "Không tạo được link.";
-  } catch (err) {
-    return "Lỗi khi upload code.";
+  } catch {
+    return "Lỗi upload code.";
   }
 }
