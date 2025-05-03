@@ -1,6 +1,6 @@
-// Module Sói AI: hỗn láo, phản emoji, mỉa mai chính tả & rep + phản ứng thu hồi ảnh module.exports.config = { name: "soi", version: "1.2.0", hasPermission: 0, credits: "GPT-4 + Bạn chỉnh sửa", description: "Sói hỗn láo: chửi nhẹ, phản ứng sai chính tả, xúc phạm, rep khinh bỉ, phát hiện thu hồi ảnh", commandCategory: "fun", usages: "[on | off]", cooldowns: 3, envConfig: {} };
+// Module Sói AI: hỗn láo, phản emoji, mỉa mai chính tả & rep module.exports.config = { name: "soi", version: "1.2.0", hasPermission: 0, credits: "GPT-4 + Bạn chỉnh sửa", description: "Sói hỗn láo: chửi nhẹ, phản ứng sai chính tả, xúc phạm, rep khinh bỉ, khịa khi thu hồi ảnh/video", commandCategory: "fun", usages: "[on | off]", cooldowns: 3, envConfig: {} };
 
-const fs = require("fs"); const path = require("path"); const axios = require("axios"); const gtts = require("gtts");
+const fs = require("fs"); const path = require("path"); const axios = require("axios");
 
 const soidataPath = path.join(__dirname, "cache", "soidata.json"); if (!fs.existsSync(soidataPath)) fs.writeFileSync(soidataPath, JSON.stringify({}));
 
@@ -12,11 +12,34 @@ const repResponses = [ "Rep tao chi vậy trời? Muốn ăn chửi à?", "Tao m
 
 const wrongSpellings = [ /\bko\b/g, /\bk0\b/g, /\bkhong\b/g, /\bwa\b/g, /\bqua\b/g, /\bthik\b/g, /\bthích\b/g, /\bbik\b/g, /\bbiet\b/g, /\bbit\b/g, /\bhok\b/g, /\bh0k\b/g, /\bh0\b/g, /\bhem\b/g, /\bdz\b/g, /\bz\b/g, /\bj\b/g, /\boke\b/g, /\bok\b/g, /\blike\b/g, /\bplz\b/g, /\btks\b/g, /\bnì\b/g, /\bnìu\b/g, /\bnhìu\b/g, /\biu\b/g, /\byeu\b/g, /\bdag\b/g, /\bdang\b/g, /\bdag\s/g, /\bc0\b/g, /\b0\b/g ];
 
-module.exports.handleEvent = async function ({ event, api }) { try { const { threadID, messageID, senderID, body, type, messageReply } = event; if (!body && event.type !== "message_unsend") return;
+module.exports.handleEvent = async function ({ event, api }) { try { const { threadID, messageID, senderID, body, type, messageReply } = event;
 
-const lowerBody = body?.toLowerCase?.() || "";
+// 1. Tin nhắn bị thu hồi
+if (event.type === "message_unsend" && global?.logMessage?.[event.messageID]) {
+  const info = global.logMessage[event.messageID];
+  const { senderID, threadID, attachments } = info;
+  const media = attachments?.find(att => att.type === "photo" || att.type === "video");
 
-// 1. Thô tục
+  if (media) {
+    try {
+      const res = await axios.get(media.url, { responseType: "stream" });
+      const name = (await api.getUserInfo(senderID))[senderID]?.name || "Ai đó";
+
+      return api.sendMessage({
+        body: `${name} mày gửi cái gì mà cần phải thu đấy!??\nNày mọi người xem nó gửi gì này 👍📢`,
+        mentions: [{ id: senderID, tag: name }],
+        attachment: res.data
+      }, threadID);
+    } catch (err) {
+      console.error("Lỗi khi tải lại media bị thu:", err);
+    }
+  }
+}
+
+if (!body) return;
+const lowerBody = body.toLowerCase();
+
+// 2. Từ ngữ thô tục
 for (let keyword in reactionMap) {
   if (lowerBody.includes(keyword)) {
     const [emoji, replyText] = reactionMap[keyword];
@@ -26,7 +49,7 @@ for (let keyword in reactionMap) {
   }
 }
 
-// 2. Mê gái
+// 3. Từ khóa mê gái
 for (let flirt of flirtKeywords) {
   if (lowerBody.includes(flirt)) {
     return api.sendMessage(
@@ -36,7 +59,7 @@ for (let flirt of flirtKeywords) {
   }
 }
 
-// 3. Chính tả
+// 4. Sai chính tả phổ biến
 for (let regex of wrongSpellings) {
   if (regex.test(lowerBody)) {
     return api.sendMessage(
@@ -46,57 +69,10 @@ for (let regex of wrongSpellings) {
   }
 }
 
-// 4. Rep người khác
+// 5. Rep người khác
 if (type === "message_reply" && messageReply?.senderID !== api.getCurrentUserID()) {
   const random = repResponses[Math.floor(Math.random() * repResponses.length)];
   return api.sendMessage(random, threadID, messageID);
-}
-
-// 5. Lưu tin nhắn ảnh
-if (event.attachments?.length > 0 && event.attachments[0].type === "photo") {
-  const historyPath = path.join(__dirname, "cache", "soi_history.json");
-  let history = {};
-  if (fs.existsSync(historyPath)) {
-    history = JSON.parse(fs.readFileSync(historyPath));
-  }
-  if (!history[event.threadID]) history[event.threadID] = {};
-  history[event.threadID][event.messageID] = {
-    type: "photo",
-    attachments: event.attachments
-  };
-  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
-}
-
-// 6. Phản ứng thu hồi
-if (event.type === "message_unsend") {
-  const { messageID, threadID } = event;
-  const historyPath = path.join(__dirname, "cache", "soi_history.json");
-  if (!fs.existsSync(historyPath)) return;
-  const history = JSON.parse(fs.readFileSync(historyPath));
-  const lastMsg = history?.[threadID]?.[messageID];
-  if (lastMsg && lastMsg.type === "photo") {
-    const imgData = lastMsg.attachments[0].url;
-    const ttsPath = path.join(__dirname, "cache", `soi_unsend_${Date.now()}.mp3`);
-    const imgPath = path.join(__dirname, "cache", `unsend_${Date.now()}.jpg`);
-
-    // Tải ảnh
-    const imgRes = await axios.get(imgData, { responseType: "stream" });
-    await new Promise((resolve, reject) => {
-      const writer = fs.createWriteStream(imgPath);
-      imgRes.data.pipe(writer);
-      writer.on("finish", resolve);
-      writer.on("error", reject);
-    });
-
-    // TTS
-    const g = new gtts("Mày gửi cái gì mà phải thu lại hả? Này mọi người xem nó gửi gì nè!");
-    await new Promise((res, rej) => g.save(ttsPath, (err) => err ? rej(err) : res()));
-
-    api.sendMessage({
-      body: "Thằng này vừa thu hồi ảnh nè. Mọi người xem nó gửi gì kìa! 👍📢",
-      attachment: [fs.createReadStream(imgPath), fs.createReadStream(ttsPath)]
-    }, threadID);
-  }
 }
 
 } catch (err) { console.error("Sói AI handleEvent error:", err); } };
