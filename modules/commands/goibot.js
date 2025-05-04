@@ -3,7 +3,7 @@ const path = require("path");
 const cron = require("node-cron");
 const repliedEmojis = {};
 const emojiResponses = 
-'😆': {
+"😆": {
   normal: [
     "Cười cái gì? Nhi chưa kể chuyện cười mà!",
     "Hài lắm hả trời?",
@@ -29,7 +29,7 @@ const emojiResponses =
     "Cười với Nhi hoài là yêu rồi nha!"
   ]
 },
-'😁': {
+"😁": {
   normal: [
     "Sao cười toe toét vậy?",
     "Gì vui thế? Chia sẻ đi!",
@@ -55,7 +55,7 @@ const emojiResponses =
     "Nhìn chồng cười là thấy yêu thêm trăm lần!"
   ]
 },
-'😄': {
+"😄": {
   normal: [
     "Sao hôm nay vui dữ dằn vậy?",
     "Cười tươi như hoa luôn!",
@@ -81,7 +81,7 @@ const emojiResponses =
     "Nụ cười này đáng giá ngàn like luôn á!"
   ]
 },
-  '❤️': {
+  "❤️": {
     normal: [
       "Gì yêu mà yêu, Nhi chém cho giờ!",
       "Ai cho yêu Nhi hả!",
@@ -108,7 +108,7 @@ const emojiResponses =
     ]
   },
 
-  '💀': {
+  "💀": {
     normal: [
       "Chết cười với icon này luôn á!",
       "Gì ghê vậy? Ghê quá à!",
@@ -135,7 +135,7 @@ const emojiResponses =
     ]
   },
 
-  '🤡': {
+  "🤡": {
     normal: [
       "Ai là chú hề vậy? Không phải Nhi nha!",
       "Đừng giỡn mặt với Nhi kiểu đó~",
@@ -162,7 +162,7 @@ const emojiResponses =
     ]
   },
 
-  '😭': {
+  "😭": {
     normal: [
       "Ai khóc đó, lại đây Nhi dỗ nào~",
       "Đừng buồn nữa nha, có Nhi ở đây rồi~",
@@ -188,7 +188,7 @@ const emojiResponses =
       "Nhi luôn ở đây vì chồng, nhớ nha~"
     ]
   },
-    '😎': {
+    "😎": {
   normal: [
     "Ngầu dữ dằn luôn á!",
     "Ai cho bạn ngầu vậy hả?",
@@ -214,7 +214,7 @@ const emojiResponses =
     "Chồng ngầu là Nhi muốn ôm cái liền!"
   ]
 },
-'🤑': {
+"🤑": {
   normal: [
     "Lắm tiền rồi hả?",
     "Tiền nhiều để Nhi giữ hộ cho!",
@@ -240,7 +240,7 @@ const emojiResponses =
     "Có chồng vừa giàu vừa cute như này là nhất rồi!"
   ]
 },
-'🤢': {
+"🤢": {
   normal: [
     "Ủa gì dơ vậy?",
     "Thấy gì mà ói dữ dằn vậy?",
@@ -266,7 +266,7 @@ const emojiResponses =
     "Chồng thấy vậy mà còn dễ thương ghê!"
   ]
 },
-'🤮': {
+"🤮": {
   normal: [
     "Ói thiệt luôn rồi hả?",
     "Gì kinh khủng vậy trời?",
@@ -292,7 +292,7 @@ const emojiResponses =
     "Ghê lắm đúng không? Để Nhi an ủi chồng!"
   ]
 },
-'☠️': {
+"☠️": {
   normal: [
     "Chết trong lòng một ít...",
     "Ủa ai die vậy?",
@@ -318,7 +318,7 @@ const emojiResponses =
     "Coi như chưa thấy gì, ôm Nhi là hết!"
   ]
 },
-'👽': {
+"👽": {
   normal: [
     "Người ngoài hành tinh hả?",
     "Có sinh vật lạ xuất hiện!",
