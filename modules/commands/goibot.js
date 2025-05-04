@@ -28,8 +28,7 @@ const emojiResponses = {
     "Thấy chồng cười là Nhi vui lắm luôn!",
     "Cười với Nhi hoài là yêu rồi nha!"
   ]
-},
-"😁": {
+"😁": 
   normal: [
     "Sao cười toe toét vậy?",
     "Gì vui thế? Chia sẻ đi!",
@@ -54,8 +53,7 @@ const emojiResponses = {
     "Nhi muốn ôm chồng vì nụ cười này!",
     "Nhìn chồng cười là thấy yêu thêm trăm lần!"
   ]
-},
-"😄": {
+"😄": 
   normal: [
     "Sao hôm nay vui dữ dằn vậy?",
     "Cười tươi như hoa luôn!",
@@ -80,8 +78,7 @@ const emojiResponses = {
     "Chồng mà cười vậy là chắc thương Nhi nhiều lắm!",
     "Nụ cười này đáng giá ngàn like luôn á!"
   ]
-},
-  "❤️": {
+  "❤️": 
     normal: [
       "Gì yêu mà yêu, Nhi chém cho giờ!",
       "Ai cho yêu Nhi hả!",
@@ -106,9 +103,7 @@ const emojiResponses = {
       "Chồng iu ơi, tim này tặng chồng nè!",
       "Thả tim là được thơm 1 cái nha chồng~"
     ]
-  },
-
-  "💀": {
+  "💀": 
     normal: [
       "Chết cười với icon này luôn á!",
       "Gì ghê vậy? Ghê quá à!",
@@ -133,9 +128,7 @@ const emojiResponses = {
       "Chồng giỡn nhây ghê luôn á~",
       "Mặc dù ghê mà vẫn thấy chồng iu cute!"
     ]
-  },
-
-  "🤡": {
+  "🤡": 
     normal: [
       "Ai là chú hề vậy? Không phải Nhi nha!",
       "Đừng giỡn mặt với Nhi kiểu đó~",
@@ -160,9 +153,7 @@ const emojiResponses = {
       "Nhi không giận, chỉ thấy chồng đáng yêu thui~",
       "Cái mặt này mà hề sao được, yêu quá đi á~"
     ]
-  },
-
-  "😭": {
+  "😭": 
     normal: [
       "Ai khóc đó, lại đây Nhi dỗ nào~",
       "Đừng buồn nữa nha, có Nhi ở đây rồi~",
@@ -187,8 +178,7 @@ const emojiResponses = {
       "Chồng khóc là Nhi buồn lắm đó~",
       "Nhi luôn ở đây vì chồng, nhớ nha~"
     ]
-  },
-    "😎": {
+    "😎": 
   normal: [
     "Ngầu dữ dằn luôn á!",
     "Ai cho bạn ngầu vậy hả?",
@@ -213,7 +203,6 @@ const emojiResponses = {
     "Đẹp trai, ngầu và đáng yêu – hoàn hảo luôn!",
     "Chồng ngầu là Nhi muốn ôm cái liền!"
   ]
-},
 "🤑": {
   normal: [
     "Lắm tiền rồi hả?",
@@ -239,8 +228,7 @@ const emojiResponses = {
     "Coi chừng gái khác nhìn chồng đó, để Nhi giữ!",
     "Có chồng vừa giàu vừa cute như này là nhất rồi!"
   ]
-},
-"🤢": {
+"🤢": 
   normal: [
     "Ủa gì dơ vậy?",
     "Thấy gì mà ói dữ dằn vậy?",
@@ -265,8 +253,7 @@ const emojiResponses = {
     "Để Nhi dắt chồng đi chỗ khác sạch sẽ hơn nè!",
     "Chồng thấy vậy mà còn dễ thương ghê!"
   ]
-},
-"🤮": {
+"🤮": 
   normal: [
     "Ói thiệt luôn rồi hả?",
     "Gì kinh khủng vậy trời?",
@@ -291,8 +278,7 @@ const emojiResponses = {
     "Chồng nhớ giữ gìn sức khoẻ nha!",
     "Ghê lắm đúng không? Để Nhi an ủi chồng!"
   ]
-},
-"☠️": {
+"☠️": 
   normal: [
     "Chết trong lòng một ít...",
     "Ủa ai die vậy?",
@@ -317,8 +303,7 @@ const emojiResponses = {
     "Ai làm chồng đau lòng vậy?",
     "Coi như chưa thấy gì, ôm Nhi là hết!"
   ]
-},
-"👽": {
+"👽": 
   normal: [
     "Người ngoài hành tinh hả?",
     "Có sinh vật lạ xuất hiện!",
@@ -343,11 +328,7 @@ const emojiResponses = {
     "Người yêu đến từ vũ trụ, độc quyền của Nhi!",
     "Chồng cute tới mức người Trái Đất không hiểu nổi!"
   ]
-}
-
-  // Bạn có thể tiếp tục thêm emoji mới theo định dạng tương tự...
-}
-};
+ };
 for (const emoji in emojiResponses) {
   if (message.includes(emoji)) {
     if (!repliedEmojis[threadID]) repliedEmojis[threadID] = [];
@@ -361,7 +342,7 @@ for (const emoji in emojiResponses) {
     setTimeout(() => {
       const index = repliedEmojis[threadID].indexOf(emoji);
       if (index !== -1) repliedEmojis[threadID].splice(index, 1);
-    }, 5 * 60 * 1000); // Sau 5 phút emoji có thể được dùng lại
+    }, 1 * 60 * 1000); // Sau 5 phút emoji có thể được dùng lại
 
     return api.sendMessage({ body: chosen, replyToMessage: event.messageID }, threadID);
   }
