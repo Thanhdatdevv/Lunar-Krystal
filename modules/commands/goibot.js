@@ -3,82 +3,60 @@ const path = require("path");
 const cron = require("node-cron");
 const repliedEmojis = {};
 const emojiResponses = {
-"😆": 
-  normal: [
-    "Cười cái gì? Nhi chưa kể chuyện cười mà!",
-    "Hài lắm hả trời?",
-    "Cười như trúng số!",
-    "Thôi bớt cười, Nhi ngại á!",
-    "Đừng có cười nữa, nhìn mà mắc cười theo luôn!",
-    "Ủa ai cho cười vậy?",
-    "Có gì vui kể Nhi nghe với!",
-    "Bị gì mà cười dữ vậy trời?",
-    "Cười như này chắc phải có bí mật!",
-    "Nụ cười đó... là đang chọc quê Nhi đúng không?"
-  ],
-  special: [
-    "Chồng cười gì dễ thương dữ!",
-    "Cười gì đó chồng iu? Kể Nhi nghe với!",
-    "Cười nhìn muốn hun ghê á!",
-    "Cười xong nhớ ôm Nhi cái nha!",
-    "Chồng cười đẹp trai quá trời luôn!",
-    "Nụ cười của chồng làm tan chảy tim Nhi luôn!",
-    "Cười nữa là Nhi yêu gấp đôi á!",
-    "Nhi chỉ muốn nhìn chồng cười hoài thôi á!",
-    "Thấy chồng cười là Nhi vui lắm luôn!",
-    "Cười với Nhi hoài là yêu rồi nha!"
-  ]
-"😁": 
-  normal: [
-    "Sao cười toe toét vậy?",
-    "Gì vui thế? Chia sẻ đi!",
-    "Thấy mặt là muốn cười theo luôn á!",
-    "Ai chọc cười bạn đó?",
-    "Nụ cười làm sáng cả khung chat!",
-    "Ê cười đẹp đó nha!",
-    "Cười gì mà như nắm được bí mật vũ trụ!",
-    "Thấy cười là Nhi nghi nghi rồi đó!",
-    "Bạn cười lên trông đáng yêu ghê á!",
-    "Nhi mà thấy là cũng muốn cười theo!"
-  ],
-  special: [
-    "Chồng cười xinh ghê á!",
-    "Thấy chồng cười là Nhi mê luôn!",
-    "Cười gì đó nè? Hôn một cái nha!",
-    "Nụ cười của chồng làm Nhi liêu xiêu luôn!",
-    "Cười lên là hết giận Nhi liền đó!",
-    "Cười nữa đi, Nhi ghiền quá rồi á!",
-    "Chồng mà cười như này là có tội với Nhi á!",
-    "Cười hoài làm sao Nhi chịu nổi chứ!",
-    "Nhi muốn ôm chồng vì nụ cười này!",
-    "Nhìn chồng cười là thấy yêu thêm trăm lần!"
-  ]
-"😄": 
-  normal: [
-    "Sao hôm nay vui dữ dằn vậy?",
-    "Cười tươi như hoa luôn!",
-    "Thấy bạn vui là Nhi cũng vui lây nè!",
-    "Cười gì đó? Bật mí với Nhi đi!",
-    "Hôm nay có chuyện gì vui đúng không?",
-    "Mặt tươi rói như mặt trời sáng!",
-    "Nụ cười làm sáng rực cả khung chat!",
-    "Có phải ai đó mới được khen đúng không?",
-    "Cười vậy là có chuyện rồi nha!",
-    "Nhi đoán bạn mới thắng gì đúng không?"
-  ],
-  special: [
-    "Chồng cười tươi như nắng mùa hè luôn!",
-    "Cười vậy là làm tim Nhi rung rinh á!",
-    "Nụ cười này đáng lưu vào tim ghê á!",
-    "Chồng cười là đẹp trai số 1!",
-    "Thấy chồng cười là biết hôm nay sẽ vui!",
-    "Nhi yêu nụ cười này ghê luôn á!",
-    "Nhi chỉ cần chồng vui là đủ rồi!",
-    "Hạnh phúc nhất là thấy chồng cười mỗi ngày!",
-    "Chồng mà cười vậy là chắc thương Nhi nhiều lắm!",
-    "Nụ cười này đáng giá ngàn like luôn á!"
-  ]
-  "❤️": 
+  const emojiResponses = {
+  "😁": {
+    normal: [
+      "Sao cười toe toét vậy?",
+      "Gì vui thế? Chia sẻ đi!",
+      "Thấy mặt là muốn cười theo luôn á!",
+      "Ai chọc cười bạn đó?",
+      "Nụ cười làm sáng cả khung chat!",
+      "Ê cười đẹp đó nha!",
+      "Cười gì mà như nắm được bí mật vũ trụ!",
+      "Thấy cười là Nhi nghi nghi rồi đó!",
+      "Bạn cười lên trông đáng yêu ghê á!",
+      "Nhi mà thấy là cũng muốn cười theo!"
+    ],
+    special: [
+      "Chồng cười xinh ghê á!",
+      "Thấy chồng cười là Nhi mê luôn!",
+      "Cười gì đó nè? Hôn một cái nha!",
+      "Nụ cười của chồng làm Nhi liêu xiêu luôn!",
+      "Cười lên là hết giận Nhi liền đó!",
+      "Cười nữa đi, Nhi ghiền quá rồi á!",
+      "Chồng mà cười như này là có tội với Nhi á!",
+      "Cười hoài làm sao Nhi chịu nổi chứ!",
+      "Nhi muốn ôm chồng vì nụ cười này!",
+      "Nhìn chồng cười là thấy yêu thêm trăm lần!"
+    ]
+  },
+  "😄": {
+    normal: [
+      "Sao hôm nay vui dữ dằn vậy?",
+      "Cười tươi như hoa luôn!",
+      "Thấy bạn vui là Nhi cũng vui lây nè!",
+      "Cười gì đó? Bật mí với Nhi đi!",
+      "Hôm nay có chuyện gì vui đúng không?",
+      "Mặt tươi rói như mặt trời sáng!",
+      "Nụ cười làm sáng rực cả khung chat!",
+      "Có phải ai đó mới được khen đúng không?",
+      "Cười vậy là có chuyện rồi nha!",
+      "Nhi đoán bạn mới thắng gì đúng không?"
+    ],
+    special: [
+      "Chồng cười tươi như nắng mùa hè luôn!",
+      "Cười vậy là làm tim Nhi rung rinh á!",
+      "Nụ cười này đáng lưu vào tim ghê á!",
+      "Chồng cười là đẹp trai số 1!",
+      "Thấy chồng cười là biết hôm nay sẽ vui!",
+      "Nhi yêu nụ cười này ghê luôn á!",
+      "Nhi chỉ cần chồng vui là đủ rồi!",
+      "Hạnh phúc nhất là thấy chồng cười mỗi ngày!",
+      "Chồng mà cười vậy là chắc thương Nhi nhiều lắm!",
+      "Nụ cười này đáng giá ngàn like luôn á!"
+    ]
+  },
+  "❤️": {
     normal: [
       "Gì yêu mà yêu, Nhi chém cho giờ!",
       "Ai cho yêu Nhi hả!",
@@ -103,7 +81,8 @@ const emojiResponses = {
       "Chồng iu ơi, tim này tặng chồng nè!",
       "Thả tim là được thơm 1 cái nha chồng~"
     ]
-  "💀": 
+  },
+  "💀": {
     normal: [
       "Chết cười với icon này luôn á!",
       "Gì ghê vậy? Ghê quá à!",
@@ -128,7 +107,8 @@ const emojiResponses = {
       "Chồng giỡn nhây ghê luôn á~",
       "Mặc dù ghê mà vẫn thấy chồng iu cute!"
     ]
-  "🤡": 
+  },
+  "🤡": {
     normal: [
       "Ai là chú hề vậy? Không phải Nhi nha!",
       "Đừng giỡn mặt với Nhi kiểu đó~",
@@ -144,191 +124,373 @@ const emojiResponses = {
     special: [
       "Chồng làm chú hề cũng cute nữa~",
       "Chồng đừng hề hoài, Nhi cưng quá trời~",
-      "Ai là hề đáng yêu nhất nè? Chồng chứ ai~",
-      "Thôi đừng hề nữa, lại đây để Nhi thơm cái~",
-      "Chồng làm trò cũng vui ghê luôn~",
-      "Cưng xỉu luôn á chồng ơi~",
-      "Hề gì cũng được miễn là chồng iu của Nhi~",
-      "Chồng cứ làm Nhi cười hoài luôn~",
-      "Nhi không giận, chỉ thấy chồng đáng yêu thui~",
-      "Cái mặt này mà hề sao được, yêu quá đi á~"
+      "Ai là hề đáng yêu nhất nè? Chồng chứ ai~"
     ]
-  "😭": 
+  "😆": {
     normal: [
-      "Ai khóc đó, lại đây Nhi dỗ nào~",
-      "Đừng buồn nữa nha, có Nhi ở đây rồi~",
-      "Khóc cái gì mà khóc hoài zạ~",
-      "Ai làm bạn buồn vậy? Nhi xử cho~",
-      "Khóc là không đẹp đâu nha~",
-      "Nước mắt rơi là tim Nhi tan chảy á~",
-      "Dừng khóc đi, cười lên cho Nhi coi~",
-      "Thương quá à, đừng khóc nữa nhen~",
-      "Cố lên nhen, có chuyện gì kể Nhi nghe~",
-      "Nhi gửi ôm ảo nè, hết buồn liền!"
+      "Cười cái gì? Nhi chưa kể chuyện cười mà!",
+      "Hài lắm hả trời?",
+      "Cười như trúng số!",
+      "Thôi bớt cười, Nhi ngại á!",
+      "Đừng có cười nữa, nhìn mà mắc cười theo luôn!",
+      "Ủa ai cho cười vậy?",
+      "Có gì vui kể Nhi nghe với!",
+      "Bị gì mà cười dữ vậy trời?",
+      "Cười như này chắc phải có bí mật!",
+      "Nụ cười đó... là đang chọc quê Nhi đúng không?"
     ],
     special: [
-      "Chồng khóc hả? Nhi thơm dỗ liền~",
-      "Ai dám làm chồng Nhi buồn vậy? Đâu, Nhi đánh liền~",
-      "Thôi mà, lại ôm Nhi nè~",
-      "Chồng đừng khóc, có Nhi ở đây với chồng rồi~",
-      "Nhi thương lắm luôn á, lại đây ôm nhen~",
-      "Lúc buồn có Nhi nè, không được giấu đâu~",
-      "Cưng xỉu khi thấy chồng khóc luôn á~",
-      "Khóc nữa là Nhi bắt cười liền á!",
-      "Chồng khóc là Nhi buồn lắm đó~",
-      "Nhi luôn ở đây vì chồng, nhớ nha~"
+      "Chồng cười gì dễ thương dữ!",
+      "Cười gì đó chồng iu? Kể Nhi nghe với!",
+      "Cười nhìn muốn hun ghê á!",
+      "Cười xong nhớ ôm Nhi cái nha!",
+      "Chồng cười đẹp trai quá trời luôn!",
+      "Nụ cười của chồng làm tan chảy tim Nhi luôn!",
+      "Cười nữa là Nhi yêu gấp đôi á!",
+      "Nhi chỉ muốn nhìn chồng cười hoài thôi á!",
+      "Thấy chồng cười là Nhi vui lắm luôn!",
+      "Cười với Nhi hoài là yêu rồi nha!"
     ]
-    "😎": 
-  normal: [
-    "Ngầu dữ dằn luôn á!",
-    "Ai cho bạn ngầu vậy hả?",
-    "Đeo kính vào là thấy chất liền!",
-    "Ngầu quá, Nhi chịu không nổi!",
-    "Người đâu mà chất chơi quá vậy trời!",
-    "Đúng kiểu 'cool ngầu' không cần chỉnh!",
-    "Đừng có ngầu nữa, Nhi loá mắt rồi nè!",
-    "Phong cách dữ thần luôn!",
-    "Khoe độ ngầu với ai đó hả?",
-    "Ngầu vậy chắc đang crush ai phải không?"
-  ],
-  special: [
-    "Chồng ngầu như này Nhi mê chết mất!",
-    "Chồng đeo kính nhìn yêu ghê!",
-    "Ngầu mà còn đáng yêu nữa chứ!",
-    "Chồng là bản định nghĩa của 'cool' luôn á!",
-    "Coi chừng có người nhìn trộm chồng vì ngầu quá đó!",
-    "Nhi phải giữ chồng kỹ hơn thôi!",
-    "Ngầu vậy là chồng của riêng Nhi nha!",
-    "Ai mà ngầu được như chồng chứ!",
-    "Đẹp trai, ngầu và đáng yêu – hoàn hảo luôn!",
-    "Chồng ngầu là Nhi muốn ôm cái liền!"
-  ]
-"🤑": {
-  normal: [
-    "Lắm tiền rồi hả?",
-    "Tiền nhiều để Nhi giữ hộ cho!",
-    "Đừng nói bạn trúng số nha!",
-    "Giàu quá, làm quen cái coi!",
-    "Mùi tiền từ đây bay tới Nhi luôn rồi!",
-    "Chia cho Nhi một ít được không?",
-    "Tự dưng thấy bạn như đại gia luôn!",
-    "Ai cho bạn giàu vậy hả?",
-    "Làm sao để giàu như bạn đây?",
-    "Đúng là ánh sáng của tiền bạc!"
-  ],
-  special: [
-    "Chồng giàu là Nhi thương nhiều hơn á!",
-    "Tiền của chồng là tiền của vợ, nhớ chưa?",
-    "Chồng có tiền, Nhi có chồng – win-win luôn!",
-    "Nhi làm quỹ giữ tiền cho chồng nha!",
-    "Chồng giàu quá, Nhi phải giữ kỹ!",
-    "Tiền nhiều làm gì, để Nhi xài phụ chồng!",
-    "Yêu chồng không vì tiền, mà vì chồng có tiền!",
-    "Chồng đại gia của lòng Nhi!",
-    "Coi chừng gái khác nhìn chồng đó, để Nhi giữ!",
-    "Có chồng vừa giàu vừa cute như này là nhất rồi!"
-  ]
-"🤢": 
-  normal: [
-    "Ủa gì dơ vậy?",
-    "Thấy gì mà ói dữ dằn vậy?",
-    "Thôi né ra cho Nhi khỏi mắc ói ké!",
-    "Ghê quá à, kể nghe đi!",
-    "Cái mặt này là thấy thứ không ưa rồi!",
-    "Thấy gì mà buồn nôn quá trời vậy?",
-    "Cho Nhi ói ké phát!",
-    "Nhi cũng thấy không ổn luôn á!",
-    "Chắc lại thấy drama trên mạng hả?",
-    "Mùi drama nồng nặc quá ta!"
-  ],
-  special: [
-    "Chồng thấy gì mà buồn nôn vậy?",
-    "Ai dám làm chồng thấy ghê vậy hả?",
-    "Né ra đi chồng ơi, để Nhi xử cho!",
-    "Chồng đừng nhìn nữa, hại mắt lắm!",
-    "Nhi ở đây, chồng an toàn rồi!",
-    "Thấy ghê là để Nhi che cho chồng!",
-    "Ai làm chồng buồn nôn là không xong với Nhi đâu!",
-    "Chồng ngoan, nhắm mắt lại đi!",
-    "Để Nhi dắt chồng đi chỗ khác sạch sẽ hơn nè!",
-    "Chồng thấy vậy mà còn dễ thương ghê!"
-  ]
-"🤮": 
-  normal: [
-    "Ói thiệt luôn rồi hả?",
-    "Gì kinh khủng vậy trời?",
-    "Thôi khỏi kể, Nhi ói theo giờ!",
-    "Ghê quá, tránh xa ra coi!",
-    "Chắc thấy thứ dơ bẩn nào đó!",
-    "Ối trời đất ơi, chuyện gì vậy?",
-    "Mặt này là chịu không nổi thiệt!",
-    "Ai mà làm bạn phản ứng mạnh vậy?",
-    "Thôi nghỉ chơi với thứ đó luôn đi!",
-    "Tởm tới mức này là dữ rồi!"
-  ],
-  special: [
-    "Chồng thấy gì mà muốn ói vậy nè?",
-    "Nhi thương chồng quá, để Nhi che mắt cho!",
-    "Chồng bị gì đó? Nhi lo quá!",
-    "Thôi đừng nhìn nữa chồng ơi!",
-    "Ai dám làm chồng ói là Nhi tới xử liền!",
-    "Chồng không sao là Nhi yên tâm rồi!",
-    "Buồn nôn quá hả chồng? Lại đây ôm Nhi nè!",
-    "Nhi sẽ bảo vệ chồng khỏi mấy thứ đó!",
-    "Chồng nhớ giữ gìn sức khoẻ nha!",
-    "Ghê lắm đúng không? Để Nhi an ủi chồng!"
-  ]
-"☠️": 
-  normal: [
-    "Chết trong lòng một ít...",
-    "Ủa ai die vậy?",
-    "Tới số rồi hả?",
-    "Thôi xong, RIP luôn!",
-    "Ai vừa bị Nhi tiêu diệt vậy?",
-    "Chắc là nói xong câu đó xỉu ngang luôn!",
-    "Biểu cảm này là mất niềm tin rồi đó!",
-    "Game over rồi nha!",
-    "Sập nguồn chưa?",
-    "Ai chọc bạn chết đứng vậy?"
-  ],
-  special: [
-    "Chồng ơi đừng die nha!",
-    "Có Nhi ở đây, không ai hại được chồng!",
-    "Chồng làm gì mà tới số vậy?",
-    "Ai dám giết chồng, Nhi tới cứu liền!",
-    "Không được chết! Chồng sống với Nhi cơ mà!",
-    "Chồng mạnh mẽ lên, Nhi bên cạnh rồi!",
-    "Chồng chết thì Nhi sống với ai?",
-    "Không cho chồng nói câu cuối đâu!",
-    "Ai làm chồng đau lòng vậy?",
-    "Coi như chưa thấy gì, ôm Nhi là hết!"
-  ]
-"👽": 
-  normal: [
-    "Người ngoài hành tinh hả?",
-    "Có sinh vật lạ xuất hiện!",
-    "Bạn không phải là người trái đất đúng không?",
-    "ET go home!",
-    "Đang bắt sóng từ vũ trụ à?",
-    "Đây là tín hiệu SOS?",
-    "Chào người anh em từ hành tinh khác!",
-    "Nhi tiếp nhận kênh sóng lạ rồi nè!",
-    "Bạn là loài nào vậy?",
-    "Cẩn thận bị bắt đi nghiên cứu nha!"
-  ],
-  special: [
-    "Chồng là người ngoài hành tinh đáng yêu nhất!",
-    "Chồng tới từ hành tinh yêu thương đúng không?",
-    "Chồng có siêu năng lực gì nói Nhi nghe đi!",
-    "Dù là người ngoài hành tinh, Nhi vẫn yêu chồng!",
-    "Nhi bắt được sóng yêu thương từ chồng rồi!",
-    "Chồng phát sáng như UFO luôn á!",
-    "Không cần biết chồng từ đâu, Nhi vẫn ôm chặt!",
-    "Chồng có gì đặc biệt thì Nhi càng mê!",
-    "Người yêu đến từ vũ trụ, độc quyền của Nhi!",
-    "Chồng cute tới mức người Trái Đất không hiểu nổi!"
-  ]
- };
+  },
+  "😁": {
+    normal: [
+      "Sao cười toe toét vậy?",
+      "Gì vui thế? Chia sẻ đi!",
+      "Thấy mặt là muốn cười theo luôn á!",
+      "Ai chọc cười bạn đó?",
+      "Nụ cười làm sáng cả khung chat!",
+      "Ê cười đẹp đó nha!",
+      "Cười gì mà như nắm được bí mật vũ trụ!",
+      "Thấy cười là Nhi nghi nghi rồi đó!",
+      "Bạn cười lên trông đáng yêu ghê á!",
+      "Nhi mà thấy là cũng muốn cười theo!"
+    ],
+    special: [
+      "Chồng cười xinh ghê á!",
+      "Thấy chồng cười là Nhi mê luôn!",
+      "Cười gì đó nè? Hôn một cái nha!",
+      "Nụ cười của chồng làm Nhi liêu xiêu luôn!",
+      "Cười lên là hết giận Nhi liền đó!",
+      "Cười nữa đi, Nhi ghiền quá rồi á!",
+      "Chồng mà cười như này là có tội với Nhi á!",
+      "Cười hoài làm sao Nhi chịu nổi chứ!",
+      "Nhi muốn ôm chồng vì nụ cười này!",
+      "Nhìn chồng cười là thấy yêu thêm trăm lần!"
+    ]
+  },
+  "😭": {
+    normal: [
+      "Thôi mà đừng khóc nữa, có Nhi ở đây rồi!",
+      "Ai làm bạn buồn vậy? Nhi xử cho!",
+      "Đừng khóc, kể Nhi nghe chuyện gì buồn nè!",
+      "Khóc xấu đó nha~",
+      "Khóc nữa là Nhi buồn theo đó!",
+      "Thương ghê luôn á, nín đi mà!",
+      "Có cần ôm một cái không?",
+      "Khóc cho nhẹ lòng rồi cười lại nha~",
+      "Nước mắt rơi vì chuyện gì vậy nè?",
+      "Thương bạn quá trời luôn á!"
+    ],
+    special: [
+      "Chồng khóc hả? Lại đây để Nhi dỗ nè!",
+      "Nhi bên chồng nè, đừng khóc nữa nha!",
+      "Ai làm chồng buồn? Nhi đánh luôn á!",
+      "Khóc nữa là Nhi hun an ủi đó nha~",
+      "Nhi ôm chồng một cái cho đỡ buồn nha!",
+      "Thấy chồng khóc là Nhi đau lòng lắm luôn!",
+      "Nín đi, có Nhi bên cạnh rồi mà~",
+      "Nước mắt này Nhi giữ dùm nha!",
+      "Cưng quá trời, để Nhi dỗ nè!",
+      "Khóc gì đâu mà cũng dễ thương nữa!"
+    ]
+  },
+  "🤣": {
+    normal: [
+      "Cười muốn xỉu luôn hả?",
+      "Đúng là chuyện hài của năm luôn á!",
+      "Ai kể chuyện cười vậy? Quá đỉnh!",
+      "Cười mà muốn lăn luôn rồi kìa!",
+      "Nhi nghe cười cũng cười theo nè!",
+      "Hài dữ thần á!",
+      "Rạp xiếc mở cửa chưa vậy?",
+      "Cười vậy chắc bụng sáu múi luôn á!",
+      "Khung chat vui như hội!",
+      "Đừng cười nữa không là xỉu luôn á!"
+    ],
+    special: [
+      "Chồng cười như muốn lăn luôn á!",
+      "Cười kiểu này là bị yêu liền nha!",
+      "Chồng làm Nhi cười muốn xỉu theo!",
+      "Cười vậy là Nhi phải hôn liền!",
+      "Chồng dễ thương quá đáng luôn á!",
+      "Cười vậy là trúng tim Nhi rồi!",
+      "Ai cho cười cute vậy chứ!",
+      "Chồng là nguồn năng lượng tích cực của Nhi á!",
+      "Nhi mà thấy là ôm chồng liền đó!",
+      "Cười xong là hun nhau nha!"
+    ]
+  },
+  "😂": {
+    normal: [
+      "Cười mà rớt nước mắt luôn rồi!",
+      "Thấy gì buồn cười vậy? Cho Nhi cười ké!",
+      "Nhi cũng muốn cười kiểu đó á!",
+      "Khóc vì cười luôn là sao!",
+      "Vui quá trời quá đất luôn!",
+      "Chuyện gì cười vậy? Nhi hóng với!",
+      "Cười đến nội thương luôn á!",
+      "Nước mắt chảy vì niềm vui!",
+      "Như coi phim hài vậy á!",
+      "Cười vậy là sảng khoái rồi!"
+    ],
+    special: [
+      "Chồng cười đáng yêu dễ sợ!",
+      "Chồng cười là Nhi muốn xỉu theo!",
+      "Cười xong nhớ hun Nhi một cái nha!",
+      "Cười vậy là yêu nhau cả đời luôn á!",
+      "Nhi ghiền nụ cười này của chồng ghê!",
+      "Nước mắt hạnh phúc luôn á!",
+      "Cười như này là vợ chồng hợp vía rồi!",
+      "Nhi mà thấy là nhào tới liền luôn!",
+      "Cười vậy là chuẩn bị dính lời nguyền yêu Nhi đó!",
+      "Đáng yêu tới mức Nhi muốn bắt cóc luôn!"
+    ]
+  },
+  "😅": {
+    normal: [
+      "Cười trừ hả? Gì sai sai đúng không?",
+      "Lúng túng hả ta?",
+      "Gì mà cười kiểu này nè?",
+      "Nhi thấy nghi nghi rồi đó nha!",
+      "Lỡ làm gì đó xấu hổ đúng không?",
+      "Gì ngại ngại vậy trời?",
+      "Nụ cười này là kiểu 'chết tui rồi' á!",
+      "Bị bắt quả tang hả?",
+      "Thôi tha cho lần này á!",
+      "Nhìn là biết đang giấu chuyện gì đó nha!"
+    ],
+    special: [
+      "Chồng làm gì sai mà cười vậy nè?",
+      "Cười vậy là biết chồng có tật rồi nha!",
+      "Cưng quá trời, tha cho đó!",
+      "Làm chuyện gì mà cười ngại vậy?",
+      "Thấy chồng cười vậy là thương ghê!",
+      "Nhi không giận đâu, chồng dễ thương mà!",
+      "Cười vậy ai mà nỡ giận chứ!",
+      "Nụ cười đó là muốn được hun đúng không?",
+      "Nhi tha nếu chồng ôm Nhi cái nè!",
+      "Cười vậy là xin lỗi rồi đúng không?"
+    ]
+  },
+  "😎": {
+    normal: [
+      "Ngầu dữ ha!",
+      "Ai cho ngầu vậy chứ!",
+      "Ngầu quá trời đất luôn!",
+      "Tỏa sáng như ngôi sao!",
+      "Làm gì mà chất chơi vậy?",
+      "Phong cách dữ thần!",
+      "Có ai cản nổi độ ngầu này không?",
+      "Đẹp trai quá đi!",
+      "Đừng ngầu nữa, Nhi mê đó!",
+      "Ngầu vậy ai chơi lại?"
+    ],
+    special: [
+      "Chồng ngầu muốn xỉu luôn á!",
+      "Đẹp trai ngời ngời luôn á!",
+      "Nhi tự hào vì chồng quá trời!",
+      "Ngầu vậy là Nhi yêu liền luôn!",
+      "Chồng làm Nhi tan chảy luôn rồi nè!",
+      "Coi chừng ai mê chồng nha!",
+      "Phong cách của chồng là đỉnh của đỉnh!",
+      "Thấy chồng ngầu là muốn ôm liền luôn!",
+      "Chồng mà ngầu vậy là Nhi phải giữ kỹ!",
+      "Ngầu như này thì Nhi xin chết mê chết mệt!"
+    ]
+  },
+  "🤑": {
+    normal: [
+      "Ai mới trúng số hả?",
+      "Làm gì mà nhìn ham tiền dữ vậy?",
+      "Thơm mùi tiền quá nè!",
+      "Có bí kíp làm giàu gì share đi!",
+      "Mắt sáng như kim cương luôn!",
+      "Ai tặng bạn vàng hả?",
+      "Làm giàu không khó đúng không?",
+      "Nghe mùi tiền từ xa luôn á!",
+      "Nhi thấy bạn đang mơ giấc mơ giàu sang!",
+      "Tiền vô như nước luôn hen!"
+    ],
+    special: [
+      "Chồng mới trúng vé số hả?",
+      "Chồng muốn nuôi Nhi đúng không?",
+      "Chồng giàu là Nhi mê liền á!",
+      "Có tiền rồi nhớ lo cho Nhi nha!",
+      "Cưng quá, vừa giàu vừa đẹp trai!",
+      "Thấy tiền là nhớ tới Nhi đó nha!",
+      "Giàu vậy là phải bao Nhi đi chơi liền!",
+      "Nhi muốn ôm chồng để hưởng ké tài lộc!",
+      "Giấc mơ đại gia thành hiện thực!",
+      "Chồng ham tiền dễ thương ghê!"
+    ]
+  },
+  "🤢": {
+    normal: [
+      "Trời ơi, thấy gì ghê vậy?",
+      "Mùi gì mà ghê quá đi!",
+      "Nhi cũng muốn ói theo luôn rồi á!",
+      "Đừng nhìn nữa, gớm quá!",
+      "Thôi tắt liền đi chớ!",
+      "Nội dung không phù hợp người yếu tim!",
+      "Eo ôi, gớm thiệt!",
+      "Sốc văn hóa luôn á!",
+      "Ghê quá đi à!",
+      "Tởm thật sự luôn!"
+    ],
+    special: [
+      "Chồng thấy gì mà ghê vậy chời?",
+      "Để Nhi che mắt cho chồng nè!",
+      "Không sao đâu, có Nhi ở đây rồi!",
+      "Chồng đừng nhìn nữa, tội quá!",
+      "Ai mà dám làm chồng thấy ghê vậy!",
+      "Chồng ơi để Nhi ôm cho bớt ghê!",
+      "Ghê tới đâu cũng không bằng chồng đáng yêu!",
+      "Nhi thấy mà cũng hết hồn theo luôn!",
+      "Chồng cần Nhi dắt đi tránh xa cái ghê đó không?",
+      "Nhìn mặt chồng ghê cũng cute nữa chứ!"
+    ]
+  },
+  "🤮": {
+    normal: [
+      "Ói luôn rồi trời!",
+      "Gớm quá nên ói thiệt!",
+      "Nội dung toxic tới mức ói luôn!",
+      "Không nuốt nổi luôn á!",
+      "Ai đưa cái gì mà khiếp quá vậy?",
+      "Khó tiêu thiệt sự!",
+      "Đừng ăn uống khi xem nha!",
+      "Bỏ đi, ói mất công!",
+      "Ghê quá không chịu nổi!",
+      "Muốn ói quá chừng luôn á!"
+    ],
+    special: [
+      "Chồng ơi, ói gì vậy chời?",
+      "Chồng đừng ói, có Nhi dỗ nè!",
+      "Nhi đưa khăn giấy cho chồng liền!",
+      "Ai làm chồng ói vậy? Để Nhi xử!",
+      "Chồng ói mà vẫn dễ thương!",
+      "Nhi lo quá trời, chồng ổn không?",
+      "Ôm Nhi cho đỡ ghê nha!",
+      "Thôi, để Nhi dắt chồng đi chơi chỗ sạch sẽ hơn!",
+      "Nhi sợ chồng mệt á!",
+      "Ói xong ráng uống nước nha chồng!"
+    ]
+  },
+  "☠️": {
+    normal: [
+      "Chết thật rồi!",
+      "Toang rồi ông giáo ơi!",
+      "Gục luôn!",
+      "Không sống nổi nữa!",
+      "Game over!",
+      "Này là mất não thật sự!",
+      "Không cứu được nữa rồi!",
+      "Tan nát tâm can!",
+      "Thấy là đi luôn á!",
+      "Ngủm củ tỏi!"
+    ],
+    special: [
+      "Chồng tiêu rồi phải không!",
+      "Thấy chồng xỉu là Nhi đau lòng quá!",
+      "Nhi đến đây cứu nè!",
+      "Chồng gục thì để Nhi đỡ!",
+      "Xỉu vì yêu Nhi đúng không?",
+      "Đừng chết chồng ơi, sống vì Nhi!",
+      "Chồng chết kiểu cute quá!",
+      "Chết vì ai? Vì Nhi đúng không!",
+      "Chồng mà chết là Nhi buồn lắm!",
+      "Thôi tỉnh lại đi, chồng iu của Nhi!"
+    ]
+  },
+  "👽": {
+    normal: [
+      "Người ngoài hành tinh tới rồi!",
+      "Bắt tín hiệu từ hành tinh lạ!",
+      "Có ai bị abduction chưa?",
+      "Ngoài hành tinh tràn về!",
+      "Nhi sợ nha!",
+      "Cảnh báo UFO!",
+      "Chúng ta không còn một mình!",
+      "E.T go home!",
+      "Chào alien!",
+      "Họ đến rồi kìa!"
+    ],
+    special: [
+      "Chồng là người ngoài hành tinh cute nhất!",
+      "Nhi bị chồng bắt cóc rồi!",
+      "Tình yêu chồng đến từ thiên hà xa!",
+      "Ngoài hành tinh cũng không cản được Nhi yêu chồng!",
+      "Chồng cute như alien luôn á!",
+      "Nhi bay lên vì chồng rồi nè!",
+      "UFO chở tình yêu tới cho Nhi!",
+      "Chồng ngoài hành tinh thì Nhi là công chúa vũ trụ!",
+      "Tín hiệu tình yêu đã bắt được chồng!",
+      "Chồng là alien nhưng Nhi không sợ, Nhi yêu!"
+    ]
+  },
+  "🤌": {
+    normal: [
+      "Mlem mlem quá trời!",
+      "Tinh tế ghê!",
+      "Đúng là đỉnh của đỉnh!",
+      "Phong cách Ý nè!",
+      "Chuẩn không cần chỉnh!",
+      "Ngon lành cành đào!",
+      "Một pha xử lý đi vào lòng người!",
+      "Tuyệt vời!",
+      "Hoàn hảo!",
+      "Mlem mlem!"
+    ],
+    special: [
+      "Chồng tinh tế ghê!",
+      "Cử chỉ chồng làm Nhi mê mẩn luôn!",
+      "Tuyệt vời như chồng thì Nhi phải giữ kỹ!",
+      "Chồng đỉnh khỏi chê!",
+      "Chồng là kiệt tác nghệ thuật!",
+      "Yêu chồng quá trời luôn!",
+      "Cử chỉ của chồng làm Nhi tan chảy!",
+      "Mlem chồng một cái được không?",
+      "Đẹp trai, tinh tế, chồng hoàn hảo luôn á!",
+      "Chồng mà vậy thì ai cưỡng lại nổi!"
+    ]
+  },
+  "💤": {
+    normal: [
+      "Ngủ mất rồi hả?",
+      "Ngáp ngắn ngáp dài!",
+      "Buồn ngủ quá chừng!",
+      "Ai đó cần đi ngủ rồi!",
+      "Mơ đẹp nha!",
+      "Chúc ngủ ngon!",
+      "Ngủ mà cũng cute vậy!",
+      "Thôi nghỉ đi cho khỏe!",
+      "Đừng thức khuya nữa nha!",
+      "Thấy ngủ là ganh tị ghê!"
+    ],
+    special: [
+      "Chồng buồn ngủ hả? Nhi ru ngủ nha!",
+      "Ngủ ngon nha chồng iu!",
+      "Mơ về Nhi nha chồng!",
+      "Chồng ngủ thì Nhi canh giấc mơ nè!",
+      "Chồng nằm mơ thấy ai á? Nhi chớ ai!",
+      "Chồng ngủ ngoan nha!",
+      "Nhi ôm chồng ngủ luôn á!",
+      "Chúc chồng có giấc mơ ngọt như Nhi!",
+      "Thấy chồng ngủ là Nhi muốn nằm kế bên liền!",
+      "Ngủ ngon chồng yêu của Nhi!"
+    ]
+  }
+};
 for (const emoji in emojiResponses) {
   if (message.includes(emoji)) {
     if (!repliedEmojis[threadID]) repliedEmojis[threadID] = [];
