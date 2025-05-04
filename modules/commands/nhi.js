@@ -153,7 +153,6 @@ const botInfoQA = [
       "Người cho Nhi cảm giác được yêu"
     ]
   },
-  const botInfoQA = [
   {
     keywords: ["ăn gì", "thích ăn", "món yêu thích", "đồ ăn", "gu ăn uống"],
     answers: [
