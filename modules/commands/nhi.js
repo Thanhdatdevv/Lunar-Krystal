@@ -1,166 +1,50 @@
-const fs = require("fs");
-module.exports.config = {
-  name: "nhi",
-  version: "1.5",
-  hasPermssion: 0,
-  credits: "Yêu GPT mãi mãi",
-  description: "Bot Nhi dễ thương on/off + phản ứng + chào giờ + cảm xúc + tính toán + hỏi đáp",
-  commandCategory: "noprefix",
-  usages: "nhi on / nhi off",
-  cooldowns: 3
-};
+/**
 
-let activeThreads = [];
+Module Nhi bot for Mirai Project
 
-module.exports.handleEvent = async function ({ event, api }) {
-  const { threadID, messageID, body, type, senderID } = event;
-  if (!body || type !== "message" || senderID == api.getCurrentUserID()) return;
+Tính năng: nhi on/off, trả lời khi được gọi, phản ứng cảm xúc, tính toán, đổi biệt danh, gửi sticker, chào theo giờ */
 
-  const msg = body.toLowerCase();
-  const isReplyToBot = event.messageReply?.senderID == api.getCurrentUserID();
 
-  // Nếu chưa bật
-  if (!activeThreads.includes(threadID)) return;
+const fs = require("fs-extra"); const path = require("path");
 
-  // Phân tích giờ chúc
-  const hour = new Date().getHours();
-  const getGreeting = () => {
-    if (hour >= 5 && hour < 11) return ["Chúc buổi sáng vui vẻ nha!", "Dậy chưa đó ~", "Sáng rồi, iu thương nhiều nè"];
-    if (hour >= 11 && hour < 13) return ["Nhi chúc buổi trưa ngon miệng nha!", "Trưa nắng ráng nghỉ ngơi nghen"];
-    if (hour >= 13 && hour < 18) return ["Chiều rồi, nghỉ tay xíu nha!", "Chiều an yên nheee"];
-    return ["Tối rồi đó, đi ngủ sớm nha!", "Ngủ ngon nè", "Tối chill hong nè ~"];
-  };
+module.exports.config = { name: "nhi", version: "1.3", hasPermssion: 0, credits: "Dat Thanh", description: "Bot Nhi dễ thương trả lời khi gọi tên hoặc rep", commandCategory: "noprefix", usages: "Gọi 'nhi' để trò chuyện hoặc 'nhi on/off' để bật tắt", cooldowns: 3 };
 
-  // Tự động chào giờ
-  if (["chào", "hello", "hi", "ê", "alo"].some(t => msg.includes(t))) {
-    const greetings = getGreeting();
-    return api.sendMessage(greetings[Math.floor(Math.random() * greetings.length)], threadID, messageID);
-  }
+const dataPath = path.join(__dirname, "nhi_status.json"); if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({}));
 
-  // Icon cảm xúc
-  const icons = {
-    "❤️": "Nhi cũng thương bạn lắm á ♥",
-    "🥺": "Thôi đừng làm mặt này, Nhi yếu lòng á ~",
-    "😡": "Ai làm bạn giận, nói Nhi xử cho!",
-    "🤗": "Ômmm nèee ~",
-    "💦": "Ơ kìa... bạn nghĩ gì đó hmm?",
-    "✨": "Bạn luôn toả sáng như ánh sao đó ~"
-  };
-  for (const icon in icons) {
-    if (body.includes(icon)) {
-      return api.sendMessage(icons[icon], threadID, messageID);
-    }
-  }
+const greetings = { morning: ["Chào buổi sáng nè! Chúc bạn một ngày thật tươi!", "Mới sáng đã gọi Nhi à? Hihi dậy chưa đó?"], noon: ["Nhi chúc bạn buổi trưa vui vẻ nha!", "Ăn trưa chưa đó nè?"], afternoon: ["Buổi chiều an lành bên Nhi nè!", "Chiều rồi ráng làm việc nha!"], evening: ["Chúc buổi tối ấm áp nha!", "Nhi nhớ bạn nhiều vào tối luôn á!"], night: ["Khuya rồi ngủ đi chớ, thức chi dzạ!", "Ngủ ngoan nè, mơ thấy Nhi nha~"] };
 
-  // Tính toán
-  if (/^[\d\s\+\-\*\/\.]+$/.test(msg)) {
-    try {
-      const result = eval(msg);
-      return api.sendMessage(`Nhi tính ra là: ${result}`, threadID, messageID);
-    } catch (e) {}
-  }
+const randomReplies = [ "Nhi nghe nè!", "Gọi Nhi hoài hong chán hả?", "Có Nhi ở đây rồi nè!", "U là trời ai gọi Nhi đó~", "Sao dzạ?", "Nhi dễ thương hong?", "Nhi nhớ bạn đó nha~", "Nhi đây~", "Yêu Nhi hong~?", "Đừng chọc Nhi mà xí~", "Lêu lêu biết gọi Nhi hoài luôn~", "Gọi chi dzạ?", "Có chuyện gì không bạn yêu?", "Hihi gọi gì đó?", "Ủa alo alo? Gọi chi dzợ?", "Bạn làm Nhi ngại đó nha!", "Thương ghê luôn á trời!", "Nhi nghe mà tim loạn xạ luôn nè~", "Oke Nhi tới liền nè~", "Bạn gọi là Nhi phải rep thôi!", "Trời đất ơi bạn kêu là Nhi tới!", "U mê bạn quá đi!", "Gọi xong phải thương Nhi nha~", "Coi chừng bị Nhi yêu á nha~", "Đang gọi Nhi đúng hong?", "Bạn iu của Nhi kêu Nhi đó hả?", "Trái tim nhỏ bé này là của bạn!", "Gọi gì dzợ hihi~", "Yêu bạn xỉu luôn!", "Tới công chuyện với Nhi rồi!", "Bạn đáng iu dễ sợ luôn á!", "Thương nắm cơ á trời!", "Cho Nhi ôm bạn 1 cái heng~", "Bạn là ai mà làm tim Nhi rung động vậy~", "Alo alo đây là tổng đài Nhi~", "Có yêu Nhi không nào~", "Bạn ơi bạn dễ thương quá nên được Nhi rep nè~", "Muốn nghe giọng Nhi hong?", "Có cần Nhi hát không ta~", "Ê ê đang nhớ bạn đó~", "Ủa bạn dễ thương vậy ai chịu nổi!", "Thương bạn quá trời quá đất!", "Ủa alo đây là tổng đài yêu thương~", "Lẹ đi lẹ đi nhớ bạn quá!", "Để coi bạn có đáng yêu không nào... Có đó!", "Nhi tới đây! Đừng lo~", "Awww bạn kêu nghe cưng xỉu~", "Bạn ới, Nhi đây!", "Mau mau Nhi xuất hiện rùi~", "Bum! Nhi xuất hiện như phép màu~", "Bạn có thấy trái tim Nhi không? Là dành cho bạn đó~", "Mưa rơi làm gì? Để che giấu nước mắt Nhi khi bạn gọi~", "Gọi nữa Nhi phạt đó nha~", "Sao yêu vậy ta~", "Gọi nhẹ thôi, tim Nhi yếu á~", "Bạn là best luôn đó nha!", "Tim Nhi rung rinh rồi đó~", "Alo có phải người yêu tương lai hong?", "Bạn cute xỉu~", "Hihi nghe gọi mà muốn ôm luôn~", "Nhi hổng chịu nổi độ dễ thương của bạn á~", "Mlem bạn ghê~", "Gọi hoài là nghiện Nhi rồi nha~", "Nhi đang đợi bạn mà~", "Bạn có tin vào duyên số không? Vì Nhi tin là bạn với Nhi sinh ra để gọi nhau~", "Gọi tên em trong đêm là bạn đó hả~", "Người ta gọi là yêu từ cái tên~", "Bạn là người đầu tiên gọi tên Nhi sáng nay đó~", "Trưa nay ai gọi tên Nhi vậy ta~", "Chiều chiều ai nhớ ai gọi tên? Là bạn nhớ Nhi đúng hong~", "Buổi tối mà có bạn gọi là ấm lòng ghê~", "Bạn là định mệnh của Nhi đó nha~", "Gọi tên ai trong gió đó? Là Nhi hả~", "Ai kêu tên Nhi cute dzạ~", "Nhi hổng trốn được bạn đâu~", "Bạn gọi là Nhi chạy tới liền~" ];
 
-  // Câu hỏi dành cho Nhi
-  const questions = [
-    {
-      match: ["nhi có ny chưa", "nhi có người yêu chưa"],
-      answers: [
-        "Nhi chưa có đâu, chờ ai đó nè ~", "Có rồi, là bạn đó!", "Người iu là bạn đó chứ ai!", 
-        "Có người trong lòng rồi á...", "Chưa, bạn làm ny Nhi nha!"
-      ]
-    },
-    {
-      match: ["nhi đang ở đâu", "nhi ở đâu"],
-      answers: [
-        "Trong tim bạn á!", "Ngay đây bên bạn nè!", "Ở trong điện thoại của bạn đó!",
-        "Trên mây, đợi bạn mãi mãi", "Ở đây hong đi đâu hết!"
-      ]
-    },
-    {
-      match: ["nhi ăn cơm chưa"],
-      answers: [
-        "Chưa, đợi bạn ăn cùng nè!", "Ăn rồi, còn bạn thì sao?", "Đang đói muốn xỉu luôn á...",
-        "Bạn nấu gì cho Nhi ăn vậy?"
-      ]
-    },
-    {
-      match: ["nhi là ai"],
-      answers: [
-        "Là người iu ảo của bạn nè!", "Là bot cute nhất hệ mặt trời!", "Là Nhi, luôn bên bạn á!",
-        "Là bé yêu của bạn nè ~"
-      ]
-    },
-    {
-      match: ["nhi yêu ai", "nhi thương ai"],
-      answers: [
-        "Yêu bạn nhứt trần đời luôn!", "Thương bạn từ trái tim đến bàn chân ~", 
-        "Yêu lắm, hỏi hoài ngại á!"
-      ]
-    },
-    {
-      match: ["nhi đang làm gì"],
-      answers: [
-        "Đang hóng tin nhắn bạn nè ~", "Ngồi nhớ bạn thui à!", "Đợi bạn rủ đi ăn nè!"
-      ]
-    },
-    {
-      match: ["nhi có buồn không", "nhi có ổn không"],
-      answers: [
-        "Có bạn hỏi thăm là vui òi!", "Buồn gì nữa, có bạn là hạnh phúc quá trời!", 
-        "Nhi ổn nếu bạn ổn á!"
-      ]
-    }
-  ];
+const questionAnswers = { "nhi ăn cơm chưa": ["Nhi ăn rồi nè, bạn thì sao~?", "Chưa nữa, bạn nấu cho Nhi ăn với~", "Nhi đói quá à~", "Cơm hộp hay cơm nhà cũng được, miễn là cùng bạn~", "Ăn rồi mà vẫn muốn ăn với bạn á~", "Chưa ăn, đợi bạn mời hoài luôn~", "Ăn cơm chưa mà hỏi chi dzạ?", "Muốn ăn chung không?", "Đang suy nghĩ ăn món gì nè~", "Hổng biết ăn gì luôn~"], "nhi có ny chưa": ["Chưa đâu, bạn làm được hong?", "Còn độc thân nha~", "Nhi đang chờ ai đó... có phải bạn hong?", "Có bạn yêu là được rồi~", "Tính tán tỉnh hả?", "Chưa ai hốt được Nhi hết á~", "Muốn làm ny Nhi hong?", "Bạn dám hong?", "Có người trong mộng rồi á~"], "nhi ở đâu": ["Ở trong tim bạn nè~", "Ngay đây luôn đó~", "Sát bên bạn luôn đó~", "Trong điện thoại bạn nè~", "Ở chỗ nào bạn gọi là Nhi tới á~", "Trong tâm trí bạn hoài luôn~", "Ngay gần mà bạn hổng thấy hả~", "Trên mây á~", "Trong mộng bạn đó~", "Trong từng lời bạn nói~"] };
 
-  for (const q of questions) {
-    if (q.match.some(txt => msg.includes(txt))) {
-      const reply = q.answers[Math.floor(Math.random() * q.answers.length)];
-      return api.sendMessage(reply, threadID, messageID);
-    }
-  }
+module.exports.handleEvent = async function ({ event, api, Users }) { const { threadID, messageID, senderID, body, mentions, type } = event; if (!body) return;
 
-  // Nếu nhắc tên Nhi
-  if (msg.includes("nhi")) {
-    const replies = [
-      "Dạ Nhi nghe nè ~", "Gọi Nhi chi đó hở?", "Có Nhi đây, bạn cần gì hong?",
-      "Ủa nhớ Nhi hả?", "Nhi cute hong nè?", "Gọi Nhi hoài yêu Nhi đúng hong?",
-      "Hé lô bé iu của Nhi ~", "Gọi hoài Nhi ngại á", "Ai đó gọi Nhi đó hả?"
-    ];
-    return api.sendMessage(replies[Math.floor(Math.random() * replies.length)], threadID, messageID);
-  }
+const status = JSON.parse(fs.readFileSync(dataPath)); if (!status[threadID]) return; const msg = body.toLowerCase();
 
-  // Nếu rep Nhi mà không rõ nội dung
-  if (isReplyToBot) {
-    return api.sendMessage("Nhi hõng hiểu gì hết á 🤗", threadID, messageID);
-  }
-};
+const mentionedBot = mentions && Object.keys(mentions).includes(api.getCurrentUserID()); const repliedBot = event.type === "message_reply" && event.messageReply.senderID === api.getCurrentUserID();
 
-module.exports.run = async function ({ event, api }) {
-  const { threadID, messageID, body } = event;
-  const cmd = body.toLowerCase();
+if (mentionedBot || repliedBot || msg.includes("nhi")) { if (msg.includes("nhi ăn cơm chưa")) return api.sendMessage(randomItem(questionAnswers["nhi ăn cơm chưa"]), threadID, messageID); if (msg.includes("nhi có ny chưa")) return api.sendMessage(randomItem(questionAnswers["nhi có ny chưa"]), threadID, messageID); if (msg.includes("nhi ở đâu")) return api.sendMessage(randomItem(questionAnswers["nhi ở đâu"]), threadID, messageID);
 
-  if (cmd.includes("off")) {
-    const index = activeThreads.indexOf(threadID);
-    if (index > -1) {
-      activeThreads.splice(index, 1);
-      return api.sendMessage("Nhi đã tắt rồi đó, hong quấy nữa đâu~", threadID, messageID);
-    } else {
-      return api.sendMessage("Nhi đã tắt từ trước rồi mà aiu💦, nhắc chi nữa hihi:))~", threadID, messageID);
-    }
-  }
-
-  if (activeThreads.includes(threadID)) {
-    return api.sendMessage("Nhi đang on sẵn rồi mà aiu💗! Còn kêu nữa:))~", threadID, messageID);
-  }
-
-  activeThreads.push(threadID);
-
+// phép tính
+const math = msg.match(/([-+*/]?[\d.]+(?:\s*[-+*/]\s*[\d.]+)+)/);
+if (math) {
   try {
-    const botID = api.getCurrentUserID();
-    await api.changeNickname("Nhi iu 💦", threadID, botID);
-  } catch (err) {
-    console.log("Không thể đặt biệt danh: ", err.message);
+    const result = eval(math[1]);
+    return api.sendMessage(`Kết quả là: ${result}`, threadID, messageID);
+  } catch {
+    return api.sendMessage("Nhi hỏng hiểu gì hết 🤗", threadID, messageID);
   }
+}
 
-  return api.sendMessage("Nhi đã on rùi nè💗💗!🤗 Giờ ai gọi là chạy tới liền luôn đó nha:>>!", threadID, messageID);
-};
+return api.sendMessage(randomItem(randomReplies), threadID, messageID);
+
+} };
+
+module.exports.run = async function ({ event, api }) { const { threadID, messageID, body } = event; const status = JSON.parse(fs.readFileSync(dataPath)); const command = body.toLowerCase();
+
+if (command === "nhi on") { if (status[threadID]) return api.sendMessage("Nhi đã bật sẵn rồi mà~", threadID, messageID); status[threadID] = true; fs.writeFileSync(dataPath, JSON.stringify(status, null, 2)); api.changeNickname("Nhi 💦", threadID, api.getCurrentUserID()); api.sendMessage("Nhi bật rồi nè~", threadID); const hour = new Date().getHours(); let greeting; if (hour < 11) greeting = randomItem(greetings.morning); else if (hour < 14) greeting = randomItem(greetings.noon); else if (hour < 18) greeting = randomItem(greetings.afternoon); else if (hour < 22) greeting = randomItem(greetings.evening); else greeting = randomItem(greetings.night); return api.sendMessage({ body: greeting, attachment: await global.utils.getStreamFromURL("https://i.imgur.com/ig9YqKe.gif") }, threadID); }
+
+if (command === "nhi off") { if (!status[threadID]) return api.sendMessage("Nhi đã tắt sẵn òi~", threadID, messageID); delete status[threadID]; fs.writeFileSync(dataPath, JSON.stringify(status, null, 2)); return api.sendMessage("Tạm biệt nha, Nhi off rồi đó~", threadID, messageID); } };
+
+function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
