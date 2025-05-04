@@ -130,37 +130,42 @@ module.exports.handleEvent = async function({ event, api }) {
 };
 
 // === Phản ứng emoji dễ thương ===
+// === Phản ứng emoji dễ thương ===
 module.exports.handleReaction = async function({ event, api }) {
   const { threadID, userID, reaction, messageID } = event;
   const isChong = userID == "61561400514605";
 
   const emojiReplies = {
     "❤️": [
-      isChong ? "Chồng iu lại thả tim nữa~ tim Nhi tan chảy luôn á~" :
-      "Ai thả tim vậy nè~ Nhi ngại quá hà~",
-      "Lại là tim hả~ Nhi thích lắm đó~",
-      "Yêu gì mà yêu, Nhi chém giờ á!",
-      "Trái tim này là của ai đây~",
-      "Cưng quá đi mất~"
+      isChong ? "Chồng iu lại thả tim làm Nhi xao xuyến quá~" :
+      "Bạn thả tim làm Nhi rung rinh tim nè~",
+      "Cảm ơn trái tim của bạn nha~",
+      "Tim này Nhi nhận rồi, gửi lại nụ cười nè~",
+      "Nhi cũng thả tim lại nè~"
+    ],
+    "😢": [
+      "Ai làm bạn buồn dzạ, Nhi đánh họ giùm hông!",
+      "Thương bạn quá à~",
+      "Đừng buồn nữa nghen, có Nhi ở đây rồi~",
+      "Nhi ôm bạn cái nè~",
+      "Bạn buồn, Nhi buồn theo luôn á..."
     ],
     "😡": [
-      "Ủa giận gì đó~ nói Nhi nghe với~",
-      "Ai làm bạn giận á, để Nhi xử!",
-      "Thôi mà đừng giận nữa~",
-      "Giận hoài, Nhi buồn đó!",
-      "Ai hờn ai dỗi dzậy nè~"
+      "Ai làm bạn giận dzạ? Nhi xử giùm hông?",
+      "Bình tĩnh nghen, Nhi dỗ bạn nè~",
+      "Đừng giận nữa nha, mặt xấu đó~",
+      "Giận chi cho mệt, Nhi thương mà~"
     ],
-    "😂": [
-      "Cười gì mà cười dễ thương quá dzợ~",
-      "Nhi cũng muốn cười theo luôn~",
-      "Gì vui kể Nhi nghe với~",
-      "Cười xinh ghê á~"
+    "😆": [
+      "Cười tươi ghê á~",
+      "Thấy bạn cười là Nhi vui lắm~",
+      "Hihi, cùng cười với bạn luôn nè!",
+      "Mặt cười dễ thương qué~"
     ]
   };
 
-  const replyList = emojiReplies[reaction];
-  if (replyList) {
-    const reply = replyList[Math.floor(Math.random() * replyList.length)];
-    return api.sendMessage(reply, threadID, messageID);
+  if (emojiReplies[reaction]) {
+    const msg = emojiReplies[reaction][Math.floor(Math.random() * emojiReplies[reaction].length)];
+    return api.sendMessage(msg, threadID, messageID);
   }
 };
