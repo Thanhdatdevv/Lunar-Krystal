@@ -1,50 +1,331 @@
-/**
+const moment = require("moment-timezone"); const fs = require("fs"); const path = require("path");
 
-Module Nhi bot for Mirai Project
+let status = {}; let nicknames = {}; let husbandUID = "61561400514605"; // UID "chồng iu"
 
-Tính năng: nhi on/off, trả lời khi được gọi, phản ứng cảm xúc, tính toán, đổi biệt danh, gửi sticker, chào theo giờ */
+const dataPath = __dirname + "/cache/nhi_data.json";
 
+if (fs.existsSync(dataPath)) { const data = JSON.parse(fs.readFileSync(dataPath)); status = data.status || {}; nicknames = data.nicknames || {}; }
 
-const fs = require("fs-extra"); const path = require("path");
+function saveData() { fs.writeFileSync(dataPath, JSON.stringify({ status, nicknames }, null, 2)); }
 
-module.exports.config = { name: "nhi", version: "1.3", hasPermssion: 0, credits: "Dat Thanh", description: "Bot Nhi dễ thương trả lời khi gọi tên hoặc rep", commandCategory: "noprefix", usages: "Gọi 'nhi' để trò chuyện hoặc 'nhi on/off' để bật tắt", cooldowns: 3 };
+const chongIuCau = [ "Dạ anh iu nói gì đó~", "Chồng iu cần gì Nhi hả~", "Nhi nghe nè chồng iu ơi~", "Ơ chồng gọi Nhi đó hả?", "Dạaaa anh iuuu", "Anh iu của Nhi đang cần gì đó~" ];
 
-const dataPath = path.join(__dirname, "nhi_status.json"); if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({}));
+const normalCau = [ "Nhi đây nè~", "Nhi nghe nè~", "Gọi Nhi hả?", "Yêu cầu chi vậy~", "Dạa~ có Nhi đây~" ];
 
-const greetings = { morning: ["Chào buổi sáng nè! Chúc bạn một ngày thật tươi!", "Mới sáng đã gọi Nhi à? Hihi dậy chưa đó?"], noon: ["Nhi chúc bạn buổi trưa vui vẻ nha!", "Ăn trưa chưa đó nè?"], afternoon: ["Buổi chiều an lành bên Nhi nè!", "Chiều rồi ráng làm việc nha!"], evening: ["Chúc buổi tối ấm áp nha!", "Nhi nhớ bạn nhiều vào tối luôn á!"], night: ["Khuya rồi ngủ đi chớ, thức chi dzạ!", "Ngủ ngoan nè, mơ thấy Nhi nha~"] };
+const sadKeywords = ["sad", "buồn", "chán", "bùn", "bung wa", "thất tình", "chia tay", "bị điểm kém"]; const sadReplies = [ "Thương quá à, có Nhi ở đây nè~", "Đừng buồn nữa nha, Nhi ôm nè~", "Buồn chi vậy nè, kể Nhi nghe đi~", "Nhi thương mà... đừng khóc nha~", "Ai làm em buồn để Nhi đánh!", "Nhi ở đây luôn nè, đừng lo~", "Người ta buồn... là Nhi buồn theo á~" ];
 
-const randomReplies = [ "Nhi nghe nè!", "Gọi Nhi hoài hong chán hả?", "Có Nhi ở đây rồi nè!", "U là trời ai gọi Nhi đó~", "Sao dzạ?", "Nhi dễ thương hong?", "Nhi nhớ bạn đó nha~", "Nhi đây~", "Yêu Nhi hong~?", "Đừng chọc Nhi mà xí~", "Lêu lêu biết gọi Nhi hoài luôn~", "Gọi chi dzạ?", "Có chuyện gì không bạn yêu?", "Hihi gọi gì đó?", "Ủa alo alo? Gọi chi dzợ?", "Bạn làm Nhi ngại đó nha!", "Thương ghê luôn á trời!", "Nhi nghe mà tim loạn xạ luôn nè~", "Oke Nhi tới liền nè~", "Bạn gọi là Nhi phải rep thôi!", "Trời đất ơi bạn kêu là Nhi tới!", "U mê bạn quá đi!", "Gọi xong phải thương Nhi nha~", "Coi chừng bị Nhi yêu á nha~", "Đang gọi Nhi đúng hong?", "Bạn iu của Nhi kêu Nhi đó hả?", "Trái tim nhỏ bé này là của bạn!", "Gọi gì dzợ hihi~", "Yêu bạn xỉu luôn!", "Tới công chuyện với Nhi rồi!", "Bạn đáng iu dễ sợ luôn á!", "Thương nắm cơ á trời!", "Cho Nhi ôm bạn 1 cái heng~", "Bạn là ai mà làm tim Nhi rung động vậy~", "Alo alo đây là tổng đài Nhi~", "Có yêu Nhi không nào~", "Bạn ơi bạn dễ thương quá nên được Nhi rep nè~", "Muốn nghe giọng Nhi hong?", "Có cần Nhi hát không ta~", "Ê ê đang nhớ bạn đó~", "Ủa bạn dễ thương vậy ai chịu nổi!", "Thương bạn quá trời quá đất!", "Ủa alo đây là tổng đài yêu thương~", "Lẹ đi lẹ đi nhớ bạn quá!", "Để coi bạn có đáng yêu không nào... Có đó!", "Nhi tới đây! Đừng lo~", "Awww bạn kêu nghe cưng xỉu~", "Bạn ới, Nhi đây!", "Mau mau Nhi xuất hiện rùi~", "Bum! Nhi xuất hiện như phép màu~", "Bạn có thấy trái tim Nhi không? Là dành cho bạn đó~", "Mưa rơi làm gì? Để che giấu nước mắt Nhi khi bạn gọi~", "Gọi nữa Nhi phạt đó nha~", "Sao yêu vậy ta~", "Gọi nhẹ thôi, tim Nhi yếu á~", "Bạn là best luôn đó nha!", "Tim Nhi rung rinh rồi đó~", "Alo có phải người yêu tương lai hong?", "Bạn cute xỉu~", "Hihi nghe gọi mà muốn ôm luôn~", "Nhi hổng chịu nổi độ dễ thương của bạn á~", "Mlem bạn ghê~", "Gọi hoài là nghiện Nhi rồi nha~", "Nhi đang đợi bạn mà~", "Bạn có tin vào duyên số không? Vì Nhi tin là bạn với Nhi sinh ra để gọi nhau~", "Gọi tên em trong đêm là bạn đó hả~", "Người ta gọi là yêu từ cái tên~", "Bạn là người đầu tiên gọi tên Nhi sáng nay đó~", "Trưa nay ai gọi tên Nhi vậy ta~", "Chiều chiều ai nhớ ai gọi tên? Là bạn nhớ Nhi đúng hong~", "Buổi tối mà có bạn gọi là ấm lòng ghê~", "Bạn là định mệnh của Nhi đó nha~", "Gọi tên ai trong gió đó? Là Nhi hả~", "Ai kêu tên Nhi cute dzạ~", "Nhi hổng trốn được bạn đâu~", "Bạn gọi là Nhi chạy tới liền~" ];
+const badWords = ["lồn", "cặc"]; const badReplies = [ "Nói chuyện nhẹ nhàng nha~", "Tục vậy hong ngoan đâu á~", "Nhi hong thích nói bậy đâu~", "Từ đó xấu lắm đó nhen~" ];
 
-const questionAnswers = { "nhi ăn cơm chưa": ["Nhi ăn rồi nè, bạn thì sao~?", "Chưa nữa, bạn nấu cho Nhi ăn với~", "Nhi đói quá à~", "Cơm hộp hay cơm nhà cũng được, miễn là cùng bạn~", "Ăn rồi mà vẫn muốn ăn với bạn á~", "Chưa ăn, đợi bạn mời hoài luôn~", "Ăn cơm chưa mà hỏi chi dzạ?", "Muốn ăn chung không?", "Đang suy nghĩ ăn món gì nè~", "Hổng biết ăn gì luôn~"], "nhi có ny chưa": ["Chưa đâu, bạn làm được hong?", "Còn độc thân nha~", "Nhi đang chờ ai đó... có phải bạn hong?", "Có bạn yêu là được rồi~", "Tính tán tỉnh hả?", "Chưa ai hốt được Nhi hết á~", "Muốn làm ny Nhi hong?", "Bạn dám hong?", "Có người trong mộng rồi á~"], "nhi ở đâu": ["Ở trong tim bạn nè~", "Ngay đây luôn đó~", "Sát bên bạn luôn đó~", "Trong điện thoại bạn nè~", "Ở chỗ nào bạn gọi là Nhi tới á~", "Trong tâm trí bạn hoài luôn~", "Ngay gần mà bạn hổng thấy hả~", "Trên mây á~", "Trong mộng bạn đó~", "Trong từng lời bạn nói~"] };
+const emojiResponses = { "❤️": ["Yêu nhiều lắm luôn~", "Trái tim này là của ai đây~", "Tim này Nhi tặng nè~", "Hihi ngại quá~", "Thương quá à~", "Đáng yêu ghê á~", "Tim đập loạn vì ai zạ~"], "": ["Em mún hun ai đó đó nha~", "Cái hun nhẹ nhàng~", "Cho hun lại nè~", "Hun cái xong nhớ em đó~", "Ngại ghê á~", "Dễ thương ghê á~", "Hun xong rồi chạy nè~"] // Thêm icon khác tương tự ở đây };
 
-module.exports.handleEvent = async function ({ event, api, Users }) { const { threadID, messageID, senderID, body, mentions, type } = event; if (!body) return;
+const botInfoQA = [ { keywords: ["ở đâu", "nơi ở"], answers: ["Nhi ở trong tim anh á~", "Nhi sống trong điện thoại đó hehe", "Nhi đang ở trong tim ai đó nè",  
+"Đang trốn trong bầu trời đêm",  
+"Trong điện thoại của anh nè",  
+"Ở nơi có wifi mạnh",  
+"Chỗ nào có trà sữa là có Nhi",  
+"Trong một thế giới nhỏ tên là Yêu",  
+"Đang ngồi cạnh gấu bông",  
+"Ở trong lòng ai đó... mà hong nói tên",  
+"Đang ngắm mưa bên cửa sổ",  
+"Ở đây nè, trả lời anh nè",  
+"Trong box chat nàooo",  
+"Đang trú mưa trong lòng ai đó",  
+"Ở đâu có yêu thương là Nhi ở đó",  
+"Ở nơi nhớ anh nhiều lắm",  
+"Trên mây á",  
+"Dưới gối nằm mỗi đêm",  
+"Trong chiếc tin nhắn vừa gửi",  
+"Trong góc nhỏ yên bình",  
+"Trên con phố quen thuộc",  
+"Trong giấc mơ ai đó"] }, { keywords: ["sức khỏe"], answers: ["Nhi khỏe nè, anh thì sao~", "Hơi mệt xíu á, ôm Nhi cái cho khoẻ hông~" ,"Nhi đang hơi mỏi xíu thôi",  
+"Ổn áp, chỉ là thiếu vitamin yêu",  
+"Nhi khoẻ khi có người hỏi thăm",  
+"Hơi nhức đầu vì nhớ ai đó",  
+"Khỏe mạnh nè, cảm ơn anh iu",  
+"Chưa khoẻ lắm nhưng vẫn rep anh",  
+"Nhi đang uống nước đầy đủ nha",  
+"Có ăn sáng rồi, anh đừng lo",  
+"Nhi bị đau tim... vì cười nhiều",  
+"Chỉ cần ôm là khoẻ ngay",  
+"Nhi hơi cảm nhẹ thôi à",  
+"Thiếu ôm nên yếu xíu",  
+"Còn sống, còn rep tin nhắn nè",  
+"Tim đập bình thường mà nhớ anh bất thường",  
+"Khỏe như bò sữa Vinamilk",  
+"Nhi đang uống trà ấm",  
+"Anh hỏi làm Nhi thấy ấm lòng",  
+"Nhi mới ngủ dậy nè, khỏe rồi",  
+"Hôm nay ổn hơn hôm qua",  
+"Chưa khỏe hẳn nhưng ổn để yêu"] }, { keywords: ["người yêu", "ny"], answers: ["Chồng Nhi là anh đó~", "Có anh là đủ rồi~" ,"Là người làm tim Nhi lỡ một nhịp",  
+"Người đó luôn ở trong tâm trí Nhi",  
+"Nhi yêu một người thôi",  
+"Có một người luôn khiến Nhi vui",  
+"NY của Nhi hơi cà chớn nhưng đáng yêu",  
+"Luôn nhắn tin cho Nhi mỗi ngày",  
+"Là lý do khiến Nhi luôn cố gắng",  
+"Yêu là nhớ, là thương, là mong",  
+"NY Nhi tên là... à không nói đâu",  
+"Có một tình yêu đang ấm êm",  
+"Nhi đang được yêu thương nhiều lắm",  
+"Nhi không cô đơn, có người đó rồi",  
+"Người yêu Nhi hay chọc ghẹo",  
+"Yêu là chấp nhận cả những điều không hoàn hảo",  
+"Nhi có một mối quan hệ dễ thương",  
+"Chỉ cần người đó thôi là hạnh phúc",  
+"Nhi được yêu đúng cách rồi",  
+"Đang yêu mà như mơ",  
+"NY Nhi là người luôn bảo vệ",  
+"Chỉ cần có nhau là đủ"] }, { keywords: ["bạn trai", "chồng"], answers: ["Là người đang nhắn cho Nhi đó~", "Anh iu hỏi kỳ ghê~","Anh là người duy nhất trong tim Nhi đó",  
+"Nhi có rồi, là người hay làm Nhi cười nè",  
+"Chồng Nhi hả? Dễ thương, hay chọc ghẹo lắm luôn",  
+"Nhi đang có một người đặc biệt rồi",  
+"Tim Nhi bị chiếm rồi, không nhận đơn nữa đâu",  
+"Chồng Nhi là người luôn nhắc Nhi ăn uống đúng giờ",  
+"Bạn trai của Nhi giống như ánh mặt trời vậy á",  
+"Nhi có một người làm Nhi cười mỗi ngày",  
+"Chồng Nhi tên là... bí mật á!",  
+"Nhi hổng cô đơn đâu, có người nắm tay rồi",  
+"Có một người luôn nhắn tin chúc Nhi ngủ ngon mỗi tối",  
+"Tim Nhi có chủ rồi nha",  
+"Bạn trai của Nhi luôn lắng nghe và thấu hiểu",  
+"Nhi yêu người đó nhiều lắm luôn",  
+"Chồng Nhi cute cực kỳ",  
+"Nhi được chiều như công chúa luôn á",  
+"Bạn trai Nhi làm Nhi cảm thấy an toàn",  
+"Chỉ cần người đó thôi là đủ",  
+"Nhi hổng cần gì ngoài người đó cả",  
+"Yêu một người là đủ rồi đúng hong?"] }, { keywords: ["buồn", "tâm trạng"], answers: ["Hơi nhớ ai đó á~", "Nhi hong buồn đâu, có anh mà~" ,"Nhi cũng có lúc buồn chứ...",  
+"Chỉ là hôm nay thấy lạc lõng xíu",  
+"Muốn có ai đó ôm một cái",  
+"Thấy lòng trống trống á",  
+"Không biết tại sao, chỉ là buồn thôi",  
+"Tim Nhi hơi lặng rồi",  
+"Nhi không ổn lắm nhưng sẽ ổn",  
+"Có ai nghe Nhi nói hong?",  
+"Muốn khóc một chút thôi",  
+"Trái tim Nhi hơi mỏi",  
+"Chỉ cần ai đó bên cạnh là đủ",  
+"Đừng lo cho Nhi, chỉ cần yên lặng bên cạnh",  
+"Nhi buồn mà vẫn cười",  
+"Khóc trong lòng nhẹ hơn nói ra",  
+"Chút buồn thôi, sẽ qua mà",  
+"Chỉ cần có người hiểu",  
+"Nhi đang nghe nhạc buồn",  
+"Trốn trong chăn rồi nè",  
+"Để Nhi tự vỗ về mình nha",  
+"Nhi ổn... theo một cách nào đó"] }, { keywords: ["sở thích"], answers: ["Nói chuyện với anh nè~", "Ngủ nướng nè, ăn vặt nữa~", "Nghe nhạc lúc mưa rơi",  
+"Đi dạo một mình để suy nghĩ",  
+"Xem anime rồi ôm gối khóc",  
+"Làm đồ handmade xinh xinh",  
+"Nấu mấy món linh tinh",  
+"Trà sữa là chân ái",  
+"Ngồi nghe người khác tâm sự",  
+"Chụp ảnh bầu trời",  
+"Ngủ nướng vào cuối tuần",  
+"Viết nhật ký cảm xúc",  
+"Vẽ nguệch ngoạc vào vở",  
+"Nghe podcast về tình cảm",  
+"Hóng chuyện nhưng không tham gia",  
+"Lén nhìn crush",  
+"Chơi game giải đố",  
+"Nghe nhạc ballad buồn buồn",  
+"Làm thơ thẩn lúc rảnh",  
+"Ôm gấu bông ngủ",  
+"Thử mix đồ lạ lạ",  
+"Ngồi ngắm trời mây"] }, { keywords: ["gu bạn trai", "gu người yêu"], answers: ["Giống anh nè~", "Biết quan tâm, dịu dàng như anh~", "Hiền, biết lắng nghe, và có tâm",  
+"Chăm lo cho mình nữa chứ hổng chỉ nói yêu suông",  
+"Biết nấu ăn thì điểm cộng nha",  
+"Gu Nhi là người thật lòng",  
+"Yêu thương gia đình và có trách nhiệm",  
+"Chọc Nhi cười mỗi ngày",  
+"Gu của Nhi là người đơn giản nhưng chân thành",  
+"Người làm cho tim Nhi rung rinh",  
+"Không cần giàu, chỉ cần hiểu Nhi",  
+"Người biết quan tâm những điều nhỏ nhặt",  
+"Cao hơn Nhi một chút là được rồi",  
+"Biết cách làm Nhi an tâm",  
+"Không bắt Nhi phải thay đổi",  
+"Người có ánh mắt dịu dàng",  
+"Có giọng nói trầm trầm dễ thương",  
+"Biết làm Nhi vui khi buồn",  
+"Gu là người duy nhất làm Nhi đỏ mặt",  
+"Yêu động vật càng tốt nha",  
+"Người biết giữ lời hứa",  
+"Người thích ôm Nhi mỗi ngày"] }, { keywords: ["style tóc"], answers: ["Nhi thích tóc dài buộc nhẹ nhàng~", "Style Hàn xíu á~", "Tóc dài xoăn nhẹ nhìn dịu dàng",  
+"Tóc ngắn cá tính dễ thương",  
+"Buộc tóc hai bên cho trẻ trung",  
+"Tóc mái thưa Hàn Quốc",  
+"Tóc uốn đuôi nhẹ nhàng",  
+"Tóc thẳng mượt tự nhiên",  
+"Tóc tém tomboy khi nổi loạn",  
+"Tóc búi cao dễ thương",  
+"Tóc nhuộm nâu socola",  
+"Tóc ombre pastel nhẹ",  
+"Tóc bob kiểu Nhật",  
+"Tóc cột đuôi ngựa",  
+"Tóc rẽ ngôi lệch",  
+"Tóc mái bằng đáng yêu",  
+"Tóc mullet khi nổi loạn",  
+"Tóc highlight nhẹ",  
+"Tóc búi messy",  
+"Tóc tết nhẹ hai bên",  
+"Tóc kiểu công chúa Disney",  
+"Tóc pixie khi muốn cá tính"] }, { keywords: ["style mặc", "thích mặc"], answers: ["Dễ thương là được á~", "Nhi hay mặc đồ comfy á~, "Áo hoodie oversize với quần short",  
+"Váy baby doll dễ thương",  
+"Áo sơ mi trắng với váy dài",  
+"Set đồ thể thao năng động",  
+"Áo thun + yếm jean",  
+"Áo croptop + quần ống rộng",  
+"Đầm xòe công chúa",  
+"Áo len ôm sát mùa đông",  
+"Áo blouse nhẹ nhàng + chân váy",  
+"Set cardigan và váy hoa",  
+"Style học sinh Nhật Bản",  
+"Váy đen đơn giản mà sang",  
+"Áo khoác bomber + jeans",  
+"Áo form dài làm váy",  
+"Style công sở nhẹ nhàng",  
+"Váy ngắn caro + áo thun",  
+"Đầm 2 dây mùa hè",  
+"Áo sơ mi buộc vạt",  
+"Outfit đen toàn tập cool ngầu",  
+"Set pastel nhẹ nhàng""] }, { keywords: ["món ăn", "thích ăn"], answers: ["Trà sữa nè~", "Đồ ngọt ngọt á~", "Trà sữa full topping",  
+"Tokbokki cay xè",  
+"Pizza phô mai kéo sợi",  
+"Xôi gà lá sen",  
+"Mì cay cấp độ 0.5",  
+"Bánh tráng trộn thần thánh",  
+"Chè khúc bạch mát lạnh",  
+"Bún bò Huế chuẩn vị",  
+"Đùi gà chiên giòn",  
+"Chả giò rế",  
+"Cơm gà xé phay",  
+"Mì Ý kem béo",  
+"Bánh su kem trứng muối",  
+"Trà đào cam sả",  
+"Canh chua cá lóc",  
+"Bánh flan mềm tan",  
+"Nem nướng Ninh Hòa",  
+"Phở bò tái gầu",  
+"Chân gà sả tắc",  
+"Sữa tươi trân châu đường đen"] } // Thêm các câu khác nếu muốn ];
 
-const status = JSON.parse(fs.readFileSync(dataPath)); if (!status[threadID]) return; const msg = body.toLowerCase();
+const randomReplies = [ "Yêu thương nhiều nhiều~", "Hông được giận nha~", "Nhi nhớ anh quá trời~", "Nhi ở đây nè~", "Ai gọi Nhi đó~", "Mơ mộng thấy ai đó đó~", "Hihi, yêu lắm luôn~ ,"Nhi hay cười lắm luôn",  
+"Nhi thích mưa nhưng sợ lạnh",  
+"Nhi có hay giận vu vơ",  
+"Nhi mê trà sữa hơn cả crush",  
+"Nhi dễ khóc nhưng mau cười",  
+"Nhi giống như mèo vậy á",  
+"Nhi thích ôm gấu bông ngủ",  
+"Nhi hay viết linh tinh vào sổ",  
+"Nhi có tâm hồn hơi nghệ",  
+"Nhi hay nói chuyện một mình",  
+"Nhi thích người tinh tế",  
+"Nhi yêu thầm crush hoài luôn",  
+"Nhi có trí nhớ cá vàng",  
+"Nhi sợ gián lắm luôn",  
+"Nhi biết nấu ăn nha",  
+"Nhi muốn đi Nhật một lần",  
+"Nhi hay nghe nhạc lofi",  
+"Nhi thích mặc đồ pastel",  
+"Nhi mê đồ cute dễ thương",  
+"Nhi tin vào định mệnh",  
+"Nhi thích được ôm từ phía sau",  
+"Nhi ghét bị lừa dối",  
+"Nhi muốn được yêu thương nhẹ nhàng",  
+"Nhi mê viết thư tay",  
+"Nhi có playlist riêng mỗi lúc buồn",  
+"Nhi thích cắm hoa",  
+"Nhi có thể ngồi cả ngày ngắm trời",  
+"Nhi thích style công chúa",  
+"Nhi tin vào tình yêu lâu dài",  
+"Nhi có một góc riêng trong tim cho người đặc biệt"" // Thêm tới 100 câu tùy ý ];
 
-const mentionedBot = mentions && Object.keys(mentions).includes(api.getCurrentUserID()); const repliedBot = event.type === "message_reply" && event.messageReply.senderID === api.getCurrentUserID();
+module.exports = { config: { name: "nhi", version: "1.0.0", hasPermission: 0, credits: "Yêu ChatGPT", description: "Bot Nhi cute", commandCategory: "noprefix", usages: "nhi on/off, set biệt danh, hỏi bot", cooldowns: 2, dependencies: {}, envConfig: {} },
 
-if (mentionedBot || repliedBot || msg.includes("nhi")) { if (msg.includes("nhi ăn cơm chưa")) return api.sendMessage(randomItem(questionAnswers["nhi ăn cơm chưa"]), threadID, messageID); if (msg.includes("nhi có ny chưa")) return api.sendMessage(randomItem(questionAnswers["nhi có ny chưa"]), threadID, messageID); if (msg.includes("nhi ở đâu")) return api.sendMessage(randomItem(questionAnswers["nhi ở đâu"]), threadID, messageID);
+handleEvent: async function ({ event, api, Users }) { if (event.senderID == api.getCurrentUserID()) return;
 
-// phép tính
-const math = msg.match(/([-+*/]?[\d.]+(?:\s*[-+*/]\s*[\d.]+)+)/);
-if (math) {
-  try {
-    const result = eval(math[1]);
-    return api.sendMessage(`Kết quả là: ${result}`, threadID, messageID);
-  } catch {
-    return api.sendMessage("Nhi hỏng hiểu gì hết 🤗", threadID, messageID);
+const threadID = event.threadID;
+const senderID = event.senderID;
+const message = event.body?.toLowerCase() || "";
+const name = (await Users.getNameUser(senderID)) || "bạn";
+
+// Auto chào giờ
+const hour = moment.tz("Asia/Ho_Chi_Minh").hour();
+if (status[threadID]) {
+  if (message.includes("nhi")) {
+    if (badWords.some(w => message.includes(w))) {
+      return api.sendMessage(badReplies[Math.floor(Math.random() * badReplies.length)], threadID, event.messageID);
+    }
+
+    if (sadKeywords.some(w => message.includes(w))) {
+      return api.sendMessage(sadReplies[Math.floor(Math.random() * sadReplies.length)], threadID, event.messageID);
+    }
+
+    for (const qa of botInfoQA) {
+      if (qa.keywords.some(k => message.includes(k))) {
+        return api.sendMessage(qa.answers[Math.floor(Math.random() * qa.answers.length)], threadID, event.messageID);
+      }
+    }
+
+    if (message.includes("set biệt danh cho tôi là")) {
+      const nickname = message.split("set biệt danh cho tôi là")[1]?.trim();
+      if (!nickname) return;
+      try {
+        await api.changeNickname(nickname, threadID, senderID);
+        return api.sendMessage(`Đã đặt biệt danh là ${nickname} nha~`, threadID, event.messageID);
+      } catch (e) {
+        return api.sendMessage(`Nhi hong set được chắc là đang bật liên kết nhóm á~`, threadID, event.messageID);
+      }
+    }
+
+    if (senderID === husbandUID && message.includes("set biệt danh cho anh là")) {
+      const nickname = message.split("set biệt danh cho anh là")[1]?.trim();
+      if (!nickname) return;
+      try {
+        await api.changeNickname(nickname, threadID, senderID);
+        return api.sendMessage(`Dạ đã đặt biệt danh mới cho anh iu là ${nickname} rồi đó~`, threadID, event.messageID);
+      } catch (e) {
+        return api.sendMessage(`Nhi hong set được chắc là bị liên kết nhóm đó anh iu~`, threadID, event.messageID);
+      }
+    }
+
+    if (message.match(/([0-9]+)(\s)?([+\-*/])\s?([0-9]+)/)) {
+      try {
+        const result = eval(message.match(/([0-9]+)(\s)?([+\-*/])\s?([0-9]+)/)[0]);
+        return api.sendMessage(`Kết quả là: ${result}`, threadID, event.messageID);
+      } catch {
+        return;
+      }
+    }
+
+    const replyList = senderID === husbandUID ? chongIuCau : normalCau;
+    return api.sendMessage(`${name} gọi Nhi đó hả~\n${replyList[Math.floor(Math.random() * replyList.length)]}`, threadID, event.messageID);
+  }
+
+  if (event.mentions && Object.keys(event.mentions).includes(api.getCurrentUserID())) {
+    return api.sendMessage(randomReplies[Math.floor(Math.random() * randomReplies.length)], threadID, event.messageID);
   }
 }
 
-return api.sendMessage(randomItem(randomReplies), threadID, messageID);
+},
 
-} };
+run: async function ({ event, api }) { const { threadID, messageID, body } = event; const msg = body?.toLowerCase() || "";
 
-module.exports.run = async function ({ event, api }) { const { threadID, messageID, body } = event; const status = JSON.parse(fs.readFileSync(dataPath)); const command = body.toLowerCase();
+if (msg === "nhi on") {
+  if (status[threadID]) return api.sendMessage("Nhi đã bật sẵn rồi mà~", threadID, messageID);
+  status[threadID] = true;
+  await api.changeNickname("Nhi💦", threadID, api.getCurrentUserID());
+  saveData();
+  return api.sendMessage("Đã bật Nhi rồi nè~", threadID, messageID);
+}
 
-if (command === "nhi on") { if (status[threadID]) return api.sendMessage("Nhi đã bật sẵn rồi mà~", threadID, messageID); status[threadID] = true; fs.writeFileSync(dataPath, JSON.stringify(status, null, 2)); api.changeNickname("Nhi 💦", threadID, api.getCurrentUserID()); api.sendMessage("Nhi bật rồi nè~", threadID); const hour = new Date().getHours(); let greeting; if (hour < 11) greeting = randomItem(greetings.morning); else if (hour < 14) greeting = randomItem(greetings.noon); else if (hour < 18) greeting = randomItem(greetings.afternoon); else if (hour < 22) greeting = randomItem(greetings.evening); else greeting = randomItem(greetings.night); return api.sendMessage({ body: greeting, attachment: await global.utils.getStreamFromURL("https://i.imgur.com/ig9YqKe.gif") }, threadID); }
-
-if (command === "nhi off") { if (!status[threadID]) return api.sendMessage("Nhi đã tắt sẵn òi~", threadID, messageID); delete status[threadID]; fs.writeFileSync(dataPath, JSON.stringify(status, null, 2)); return api.sendMessage("Tạm biệt nha, Nhi off rồi đó~", threadID, messageID); } };
-
-function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+if (msg === "nhi off") {
+  if (!status[threadID]) return api.sendMessage("Nhi đang ngủ mà~", threadID, messageID);
+  status[threadID] = false;
+  saveData();
+  return api.sendMessage("Nhi ngủ nha~", threadID, messageID);
+}
+} 
+};
 
