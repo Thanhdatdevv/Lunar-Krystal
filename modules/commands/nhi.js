@@ -331,20 +331,17 @@ module.exports = {
   run: async function ({ event, api }) {
     const { threadID, messageID, body } = event;
     const msg = body?.toLowerCase() || "";
+case 'on': {
+  const botID = api.getCurrentUserID();
+  const nickname = 'Nhi💦';
 
-    if (msg === "nhi on") {
-      if (status[threadID]) return api.sendMessage("Nhi đã bật sẵn rồi mà~", threadID, messageID);
-      status[threadID] = true;
-      await api.changeNickname("Nhi💦", threadID, api.getCurrentUserID());
-      saveData();
-      return api.sendMessage("Đã bật Nhi rồi nè~", threadID, messageID);
-    }
-
-    if (msg === "nhi off") {
-      if (!status[threadID]) return api.sendMessage("Nhi đang ngủ mà~", threadID, messageID);
-      status[threadID] = false;
-      saveData();
-      return api.sendMessage("Nhi ngủ nha~", threadID, messageID);
-    }
+  if (global.nhi_on_threads.includes(threadID)) {
+    return api.sendMessage('Nhi đang on rồi đó, không cần bật nữa đâu nha~', threadID, messageID);
   }
-};
+
+  global.nhi_on_threads.push(threadID);
+  api.sendMessage(`Nhi đã bật ở nhóm này rồi nè~`, threadID);
+  api.changeNickname(nickname, threadID, botID); // set biệt danh cho bot
+  return;
+}
+  }
