@@ -492,6 +492,7 @@ const emojiResponses = {
   }
 };
 const message = event.body || "";
+
 for (const emoji in emojiResponses) {
   if (message.includes(emoji)) {
     if (!repliedEmojis[threadID]) repliedEmojis[threadID] = [];
@@ -505,11 +506,11 @@ for (const emoji in emojiResponses) {
     setTimeout(() => {
       const index = repliedEmojis[threadID].indexOf(emoji);
       if (index !== -1) repliedEmojis[threadID].splice(index, 1);
-    }, 1 * 60 * 1000); // Sau 5 phút emoji có thể được dùng lại
+    }, 1 * 60 * 1000); // Sau 1 phút emoji có thể được dùng lại
 
     return api.sendMessage({ body: chosen, replyToMessage: event.messageID }, threadID);
   }
-      }
+}
 module.exports.config = {
 name: "nhi",
 version: "1.0.0",
