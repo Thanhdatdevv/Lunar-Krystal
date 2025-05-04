@@ -1,10 +1,34 @@
 const fs = require("fs-extra");
 const path = require("path");
 const cron = require("node-cron");
+// === Xử lý rep hỏi Nhi ===
+const replyMsg = event.messageReply.body.toLowerCase();
+const userMsg = event.body.toLowerCase();
+const replyName = event.senderID == api.getCurrentUserID() ? "Nhi" : "Nhi";
+
+if (replyMsg.includes("nhi")) {
+    let reply = "";
+
+    if (userMsg.includes("ăn chưa")) {
+        reply = "Nhi ăn rồi mà vẫn thèm đồ ngọt nữa hihi";
+    } else if (userMsg.includes("có ny") || userMsg.includes("có người yêu") || userMsg.includes("có ngyêu") || userMsg.includes("có ngyeu")) {
+        reply = "Nhi còn độc thân nè, ai muốn làm người yêu Nhi hơm?";
+    } else if (userMsg.includes("buồn không")) {
+        reply = "Nhi vui lắm vì có bạn nói chuyện cùng nè!";
+    } else if (userMsg.includes("thích gì")) {
+        reply = "Nhi thích nghe nhạc chill, ăn bánh ngọt và nói chuyện với bạn~";
+    } else if (userMsg.includes("bao nhiêu tuổi")) {
+        reply = "Nhi còn bé thôi nhưng hiểu chuyện lắm đó!";
+    } else {
+        reply = "Nhi không hiểu gì hếtt🤗";
+    }
+
+    return api.sendMessage(reply, threadID, messageID);
+          }
 const repliedEmojis = {};
 const emojiResponses = {
-  "😁": {
-    normal: [
+  "😁": { 
+    normal: 
       "Sao cười toe toét vậy?",
       "Gì vui thế? Chia sẻ đi!",
       "Thấy mặt là muốn cười theo luôn á!",
@@ -555,7 +579,7 @@ fs.writeJsonSync(dataFile, stateData);
 return api.sendMessage("Dạ, Nhi đã được bật rồi nhé! ☺️✨", threadID);
 }
 
-if (text === "nhi off") {
+if (text === "nhi tat") {
 stateData[threadID] = false;
 fs.writeJsonSync(dataFile, stateData);
 return api.sendMessage("Nhi đã tắt, chờ em bật lại sau nha 😘💔", threadID);
@@ -573,7 +597,17 @@ const reply = isSpecial ? responses.special : responses.normal;
 return api.sendMessage(reply[Math.floor(Math.random() * reply.length)], threadID);
 }
 }
+module.exports.handleEvent = async ({ api, event, Users }) => {
+  const { body, mentions, messageReply, threadID, messageID, senderID } = event;
+  const lowerBody = body?.toLowerCase() || "";
 
+  // Phép toán đơn giản
+  if (/^\s*[\d\.\s]+[\+\-\*\/][\d\.\s]+\s*$/.test(lowerBody)) {
+    try {
+      const result = eval(lowerBody);
+      return api.sendMessage(`Để Nhi tính cho nhé kết quả là: ${result}`, threadID, messageID);
+    } catch (e) {}
+  }
 // Từ cực thô
 const heavyWords = ["lồn", "cặc", "địt", "súc vật", "djtme", "dcm", "clm", "vch", "vcd", "mẹ mày", "cmm", "cmn"];
 for (const w of heavyWords) {
@@ -588,8 +622,8 @@ return api.sendMessage(replies[Math.floor(Math.random() * replies.length)], thre
 // Từ khóa nhẹ
 const responses = {
 "sủa": ["Này... đừng có sủa như chó nữa 🐶", "Bớt làm chó một chút đi 🐶", "Ồ, em biết sủa à? 🐶"],
-"vcl": ["Cái gì vậy trời?! 😯", "Sao run vậy ta? 🤷‍♀️", "Ồ trời ơi, bình tĩnh nào 😅"],
-"vai ca dai": ["Có chuyện gì mà dữ vậy... 😮", "Nói rõ xem nào... 🤓", "Wow, kỳ lắm đấy... 💩"],
+"vcl": [ "Cái gì vậy trời?! 😯", "Sao run vậy ta? 🤷‍♀️", "Ồ trời ơi, bình tĩnh nào 😅"],
+"vai ca dai": [ "Có chuyện gì mà dữ vậy... 😮", "Nói rõ xem nào... 🤓", "Wow, kỳ lắm đấy... 💩"],
 "ngu": ["Nói chuyện lịch sự chút đi 🙄", "Ai ngu mà vậy ta 😅", "Không có gì để nói nữa à? 🤐"]
 };
 
