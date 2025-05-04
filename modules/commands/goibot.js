@@ -3,7 +3,6 @@ const path = require("path");
 const cron = require("node-cron");
 const repliedEmojis = {};
 const emojiResponses = {
-  const emojiResponses = {
   "😁": {
     normal: [
       "Sao cười toe toét vậy?",
