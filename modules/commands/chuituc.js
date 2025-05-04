@@ -3,7 +3,7 @@ module.exports = {
     name: "chuituc",
     version: "2.6",
     hasPermission: 0,
-    credits: "QuỳnhGPT",
+    credits: "Dat Thanh",
     description: "Phản hồi khi người dùng chửi tục hoặc dùng dấu ? (trừ tin nhắn của bot)",
     commandCategory: "Hệ thống",
     usages: "Gửi tin nhắn thường để kiểm tra",
@@ -20,7 +20,7 @@ module.exports = {
     const toxicWords = [
       "lồn", "lon", "cặc", "cac", "địt", "djt", "đụ", 
       "chịch", "đéo", "thằng ngu", "con đĩ", "peter", 
-      "mary","bot ngu" ,"bot đần" ,"chem chép", "đĩ", "vú", "dú"
+      "mary","bot ngu" ,"bot đần" ,"chem chép", "đĩ", "đỉ", "vú", "dú"
     ];
     
     const containsToxic = toxicWords.some(word => text.includes(word));
@@ -36,7 +36,7 @@ module.exports = {
 
     if (containsQuestionMark) {
       return api.sendMessage(
-        "Bạn bỏ ? sẽ cute hơn nhiều á 😘", 
+        "Bạn cute dữ á 😘", 
         event.threadID, 
         event.messageID
       );
