@@ -491,6 +491,7 @@ const emojiResponses = {
     ]
   }
 };
+const message = event.body || "";
 for (const emoji in emojiResponses) {
   if (message.includes(emoji)) {
     if (!repliedEmojis[threadID]) repliedEmojis[threadID] = [];
