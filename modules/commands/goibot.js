@@ -619,5 +619,3 @@ return api.sendMessage(reply, threadID);
 }
 }
 };
-
-  
