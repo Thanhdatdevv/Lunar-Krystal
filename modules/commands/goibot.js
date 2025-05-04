@@ -125,6 +125,7 @@ const emojiResponses = {
       "Chồng đừng hề hoài, Nhi cưng quá trời~",
       "Ai là hề đáng yêu nhất nè? Chồng chứ ai~"
     ]
+  },
   "😆": {
     normal: [
       "Cười cái gì? Nhi chưa kể chuyện cười mà!",
