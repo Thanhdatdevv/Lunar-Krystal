@@ -2,8 +2,8 @@ const fs = require("fs-extra");
 const path = require("path");
 const cron = require("node-cron");
 const repliedEmojis = {};
-const emojiResponses = 
-"😆": {
+const emojiResponses = {
+"😆": 
   normal: [
     "Cười cái gì? Nhi chưa kể chuyện cười mà!",
     "Hài lắm hả trời?",
