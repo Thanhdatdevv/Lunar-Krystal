@@ -533,7 +533,7 @@ if (stateData[threadID]) {
 try {
 await api.sendMessage(message, threadID);
 } catch (e) {
-console.log([NHI] Gửi lời nhắn thất bại đến thread ${threadID}:, e);
+console.log(`[NHI] Gửi lời nhắn thất bại đến thread ${threadID}:`, e);
 }
 }
 }
