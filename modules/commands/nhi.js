@@ -353,25 +353,6 @@ module.exports = {
         return api.sendMessage(randomReplies[Math.floor(Math.random() * randomReplies.length)], threadID, event.messageID);
       }
     }
+   module.exports.run = () => {};
   },
-
-  run: async function ({ event, api }) {
-    const { threadID, messageID, body } = event;
-   const msg = (body && body.toLowerCase()) || "";
-
-    if (msg === "nhi on") {
-      if (status[threadID]) return api.sendMessage("Nhi đã bật sẵn rồi mà~", threadID, messageID);
-      status[threadID] = true;
-      await api.changeNickname("Nhi💦", threadID, api.getCurrentUserID());
-      saveData();
-      return api.sendMessage("Đã bật Nhi rồi nè~", threadID, messageID);
-    }
-
-    if (msg === "nhi off") {
-      if (!status[threadID]) return api.sendMessage("Nhi đang ngủ mà~", threadID, messageID);
-      status[threadID] = false;
-      saveData();
-      return api.sendMessage("Nhi ngủ nha~", threadID, messageID);
-    }
-  }
 };
