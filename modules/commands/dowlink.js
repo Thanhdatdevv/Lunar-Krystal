@@ -37,24 +37,27 @@ module.exports.handleEvent = async function({ event, api }) {
       videoURL = res.data.data.play;
     }
     else if (link.includes("youtube.com") || link.includes("youtu.be")) {
-      return api.sendMessage("YouTube chưa hỗ trợ tải trực tiếp. Hãy dùng lệnh riêng.", threadID, messageID);
-    } else {
-      return;
+  const yt = await axios.get(`https://ytloader.in/api/button/video?url=${encodeURIComponent(link)}`);
+  const match = yt.data.match(/href="(https:\/\/[^"]+?\.mp4.*?)"/);
+  if (match && match[1]) {
+    videoURL = match[1];
+  } else {
+    return api.sendMessage("Nhi Không thể tải video YouTube này.", threadID, messageID);
+  }
     }
-
     if (!videoURL) return api.sendMessage("Không tải được video!", threadID, messageID);
 
     const response = await axios.get(videoURL, { responseType: "stream" });
     response.data.pipe(fs.createWriteStream(filename));
     response.data.on("end", () => {
       api.sendMessage({
-        body: "Tải xong rồi nè!",
+        body: "Nhi Tải xong rồi nè!💗",
         attachment: fs.createReadStream(filename)
       }, threadID, () => fs.unlinkSync(filename), messageID);
     });
   } catch (e) {
     console.log(e);
-    return api.sendMessage("Lỗi khi tải video!", threadID, messageID);
+    return api.sendMessage("Lỗi khi tải video òi kêu chồng mình fix đi🤗!", threadID, messageID);
   }
 };
 
