@@ -3,62 +3,48 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports.config = {
-  name: "dowlink",
-  version: "1.0",
-  hasPermssion: 0,
+  name: "autodowlink",
+  version: "2.0.0",
+  hasPermission: 0,
   credits: "Dat Thanh",
-  description: "Tự động tải video khi có link Facebook, YouTube, TikTok, Douyin",
+  description: "Tự động phát hiện link video và tải về (Facebook, TikTok, YouTube...)",
   commandCategory: "Tiện ích",
-  usages: "Gửi link video",
-  cooldowns: 5,
+  usages: "Tự động (không cần gọi lệnh)",
+  cooldowns: 0,
 };
 
-module.exports.handleEvent = async function({ event, api }) {
+module.exports.handleEvent = async function ({ api, event }) {
   const { body, threadID, messageID } = event;
   if (!body) return;
 
-  let link = body.match(/(https?:\/\/[^\s]+)/g);
-  if (!link) return;
+  // Regex phát hiện link video
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urls = body.match(urlRegex);
+  if (!urls) return;
 
-  link = link[0];
+  for (const url of urls) {
+    try {
+      const res = await axios.get(`https://api-dowloader.vercel.app/?url=${encodeURIComponent(url)}`);
+      const data = res.data;
 
-  let res, videoURL, filename = __dirname + `/cache/video.mp4`;
-  try {
-    if (link.includes("facebook.com") || link.includes("fb.watch")) {
-      res = await axios.get(`https://fbapi.megaapi.repl.co/?url=${encodeURIComponent(link)}`);
-      videoURL = res.data.hd || res.data.sd;
-    }
-    else if (link.includes("tiktok.com")) {
-      res = await axios.get(`https://api.tikwm.com/video?url=${encodeURIComponent(link)}`);
-      videoURL = res.data.data.play;
-    }
-    else if (link.includes("douyin.com")) {
-      res = await axios.get(`https://www.tikwm.com/api?url=${encodeURIComponent(link)}`);
-      videoURL = res.data.data.play;
-    }
-    else if (link.includes("youtube.com") || link.includes("youtu.be")) {
-  const yt = await axios.get(`https://ytloader.in/api/button/video?url=${encodeURIComponent(link)}`);
-  const match = yt.data.match(/href="(https:\/\/[^"]+?\.mp4.*?)"/);
-  if (match && match[1]) {
-    videoURL = match[1];
-  } else {
-    return api.sendMessage("Nhi Không thể tải video YouTube này.", threadID, messageID);
-  }
-    }
-    if (!videoURL) return api.sendMessage("Không tải được video!", threadID, messageID);
+      if (data.status !== true || !data.data || !data.data.length) {
+        continue; // bỏ qua nếu không hỗ trợ
+      }
 
-    const response = await axios.get(videoURL, { responseType: "stream" });
-    response.data.pipe(fs.createWriteStream(filename));
-    response.data.on("end", () => {
+      const { url: videoUrl, type, title } = data.data[0];
+      const filePath = path.join(__dirname, "cache", `autodl_${Date.now()}.${type === "audio" ? "mp3" : "mp4"}`);
+      const fileData = await axios.get(videoUrl, { responseType: "arraybuffer" });
+      fs.writeFileSync(filePath, fileData.data);
+
       api.sendMessage({
-        body: "Nhi Tải xong rồi nè!💗",
-        attachment: fs.createReadStream(filename)
-      }, threadID, () => fs.unlinkSync(filename), messageID);
-    });
-  } catch (e) {
-    console.log(e);
-    return api.sendMessage("Lỗi khi tải video òi kêu chồng mình fix đi🤗!", threadID, messageID);
+        body: `Tải thành công: ${title || "Video không tiêu đề"}\nNguồn: ${url}`,
+        attachment: fs.createReadStream(filePath),
+      }, threadID, () => fs.unlinkSync(filePath), messageID);
+
+    } catch (err) {
+      console.log("Lỗi autodowlink:", err.message);
+    }
   }
 };
 
-module.exports.run = () => {};
+module.exports.run = () => {}; // Không cần xử lý khi gọi lệnh trực tiếp
