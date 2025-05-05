@@ -1,113 +1,92 @@
-// shopxe.js - Module Quản lý Mua Bán Xe cho Mirai Project
+const fs = require("fs-extra");
+const path = require("path");
 
-const fs = require("fs-extra"); const path = require("path"); const axios = require("axios"); const moment = require("moment-timezone");
+const dataPath = path.join(__dirname, "..", "..", "cache", "shopxe_data.json");
+if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({ users: {}, dsXe: [] }, null, 2));
 
-const dataPath = path.join(__dirname, "shopxe_data.json"); if (!fs.existsSync(dataPath)) fs.writeJSONSync(dataPath, { users: {}, xe: [] }); const database = fs.readJSONSync(dataPath);
+const data = JSON.parse(fs.readFileSync(dataPath));
 
-// Giá xe demo (có thể mở rộng thêm) const dsXe = [ { ten: "Lamborghini Aventador", loai: "sieudua", gia: 15000000000 }, { ten: "Ferrari SF90", loai: "sieudua", gia: 12000000000 }, { ten: "Ducati Panigale V4", loai: "pkl", gia: 1000000000 }, { ten: "SH 150i", loai: "tayga", gia: 120000000 }, { ten: "Vision 2023", loai: "tayga", gia: 40000000 } ];
-
-function saveData() { fs.writeJSONSync(dataPath, database); }
 function genBienSo() {
   const num = Math.floor(Math.random() * 300) + 76000;
   return `RZX${num}`;
 }
 
-module.exports = { config: { name: "shopxe", version: "1.0", credits: "Dat Thanh", description: "Quản lý mua bán xe, chức năng chuyenxe, gopxe", commandCategory: "Tiện ích", usages: "/shopxe <lệnh>", hasPrefix: true, cooldowns: 3 }, run: async function ({ api, event, args }) { const { threadID, senderID, messageID, mentions } = event; const name = (await api.getUserInfo(senderID))[senderID].name; const userData = database.users[senderID] || { kho: [], noGop: [] }; if (!database.users[senderID]) database.users[senderID] = userData;
+module.exports = {
+  config: {
+    name: "shopxe",
+    version: "1.0.0",
+    author: "GPT",
+    description: "Quản lý shop xe ảo với nhiều mẫu xe",
+    commandCategory: "Tiện ích",
+    usages: "shopxe [list|muaxe|banxe|kho|menu|chuyenxe|gopxe]",
+    cooldowns: 5
+  },
 
-const sub = args[0];
+  onStart: async function ({ api, event, args }) {
+    const { threadID, messageID, senderID } = event;
+    const [action, ...params] = args;
 
-if (sub === "list") {
-  let msg = "Danh sách xe hiện có:"; for (const xe of dsXe) msg += • ${xe.ten} - ${xe.gia.toLocaleString()} VND ; return api.sendMessage(msg, threadID, messageID); }
+    switch (action) {
+      case "list": {
+        let msg = `\uD83C\uDFCE️ 𝗗𝗮𝗻𝗵 𝘀𝗮́𝗰𝗵 𝘅𝗲 𝗵𝗶𝗲̣̂𝗻 𝗰𝗼́:\n`;
+        for (const xe of data.dsXe) {
+          msg += `• ${xe.ten} - ${xe.gia.toLocaleString()} VND\n`;
+        }
+        return api.sendMessage(msg, threadID, messageID);
+      }
 
-if (sub === "muaxe") {
-  const tenXe = args.slice(1).join(" ");
-  const xe = dsXe.find(x => x.ten.toLowerCase() === tenXe.toLowerCase());
-  if (!xe) return api.sendMessage("Xe không tồn tại!", threadID, messageID);
+      case "muaxe": {
+        const tenXe = params.join(" ").trim();
+        const xe = data.dsXe.find(x => x.ten.toLowerCase() === tenXe.toLowerCase());
+        if (!xe) return api.sendMessage("\u274C Xe không tồn tại!", threadID, messageID);
 
-  // Tiền tạm demo: người dùng luôn mua được
-  const bienSo = genBienSo();
-  const now = moment().tz("Asia/Ho_Chi_Minh").format("HH:mm:ss - DD/MM/YYYY");
-  const thongTin = {
-    ten: xe.ten,
-    bienSo,
-    ngayMua: now,
-    cccd: senderID,
-    chuXe: name
-  };
-  userData.kho.push(thongTin);
-  saveData();
+        const bienSo = genBienSo();
+        const ngayMua = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 
-  return api.sendMessage(
-    `\u2708\ufe0f \u0110\u00e3 mua ${xe.ten} thành công!
+        if (!data.users[senderID]) data.users[senderID] = { kho: [] };
+        data.users[senderID].kho.push({ ...xe, bienSo, ngayMua });
+        fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 
-\n\u2728 Giấy chứng nhận sở hữu xe:\n\n⚡\ufe0f Tên chủ xe: ${name}\n⚡\ufe0f CCCD chủ xe: ${senderID}\n⚡\ufe0f Ngày mua: ${now}\n⚡\ufe0f Biển số xe: ${bienSo}`, threadID, messageID ); }
+        return api.sendMessage(
+          `\u2705 Bạn đã mua thành công xe: ${xe.ten}\n\n--- 𝗚𝗶𝗮̂́𝘆 𝗰𝗵𝘂𝘆𝗲̂̉𝗻 𝗻𝗵𝘂̛𝗼̛̣𝗻𝗴 ---\n𝗧𝗲̂𝗻 𝗰𝗵𝘂̉ 𝘀𝗼̛̉ 𝗵𝘂̛̃𝘂: ${event.senderName}\n𝗖𝗖𝗖𝗗: ${senderID}\n𝗡𝗴𝗮̀𝘆 𝗴𝗶𝗼̛̀ 𝗺𝘂𝗮: ${ngayMua}\n𝗕𝗶𝗲̂̉𝗻 𝘀𝗼̂́: ${bienSo}`,
+          threadID, messageID
+        );
+      }
 
-if (sub === "kho") {
-  if (userData.kho.length === 0) return api.sendMessage("Bạn chưa sở hữu chiếc xe nào!", threadID);
-  let msg = `\u{1F4C2} Kho xe của ${name}:
-; userData.kho.forEach((x, i) => { msg += #${i + 1}. ${x.ten} - Biển số: ${x.bienSo} `; }); return api.sendMessage(msg, threadID); }
+      case "kho": {
+        const kho = data.users[senderID]?.kho || [];
+        if (!kho.length) return api.sendMessage("\u26FD️ Kho xe của bạn đang trống!", threadID, messageID);
 
-if (sub === "menu") {
-  return api.sendMessage(`\u{1F6E3}\uFE0F MENU LỆNH SHOPXE:\n
+        let msg = `\uD83D\uDE97 𝗞𝗵𝗼 𝘅𝗲 𝗰𝘂̉𝗮 𝗯𝗮̣𝗻:\n`;
+        for (const xe of kho) {
+          msg += `• ${xe.ten} - ${xe.bienSo}\n`;
+        }
+        return api.sendMessage(msg, threadID, messageID);
+      }
+if (subcmd === "chuyenxe") { if (data[senderID].length === 0) return api.sendMessage("Bạn không có xe để chuyển.", threadID, messageID); const mentionID = Object.keys(mentions)[0]; if (!mentionID) return api.sendMessage("Vui lòng tag người nhận xe.", threadID, messageID);
 
-/shopxe list - Xem danh sách xe\n/shopxe muaxe <tên xe> - Mua xe\n/shopxe banxe <tên xe> - Bán xe\n/shopxe kho - Xem kho xe\n/shopxe chuyenxe @tên - Chuyển xe\n/shopxe gopxe <tên xe> - Mua xe trả góp`, threadID); }
+const xe = data[senderID][0]; // chuyển chiếc đầu tiên
+const tenNguoiNhan = mentions[mentionID];
 
-if (sub === "banxe") {
-  const ten = args.slice(1).join(" ");
-  const index = userData.kho.findIndex(x => x.ten.toLowerCase() === ten.toLowerCase());
-  if (index === -1) return api.sendMessage("Bạn không sở hữu xe này!", threadID);
-  userData.kho.splice(index, 1);
-  saveData();
-  return api.sendMessage(`\u{1F6E0} \u0110ã bán xe ${ten} thành công.`, threadID);
-}
+const msg = `[ 𝗚𝗶𝗮̂́𝘆 𝗖𝗵𝘂𝘆𝗲̂̉𝗻 𝗡𝗵𝘂̛𝗼̛̣𝗻𝗴 𝗫𝗲 ] \nBạn thật sự muốn chuyển xe ${xe.ten} cho ${tenNguoiNhan}?\nThả tim vào tin nhắn này để xác nhận.`;
+return api.sendMessage(msg, threadID, (err, info) => {
+  global.handleReaction.push({
+    name: this.config.name,
+    messageID: info.messageID,
+    author: senderID,
+    type: 'chuyenxe',
+    data: { tenXe: xe.ten, bienSo: xe.bienSo, receiverID: mentionID }
+  });
+}, messageID);
 
-if (sub === "chuyenxe") {
-  const tag = Object.keys(mentions)[0];
-  if (!tag) return api.sendMessage("Vui lòng tag người muốn chuyển.", threadID);
-  const ten = args.slice(1).join(" ").replace(mentions[tag], "").trim();
-  const index = userData.kho.findIndex(x => x.ten.toLowerCase() === ten.toLowerCase());
-  if (index === -1) return api.sendMessage("Bạn không sở hữu xe này!", threadID);
+} 
+      case "menu": {
+        return api.sendMessage(`\uD83D\uDCCB 𝗠𝗲𝗻𝘂 𝗦𝗵𝗼𝗽 𝗫𝗲\n
+• /shopxe list - Xem danh sách xe\n• /shopxe muaxe <tên xe> - Mua xe\n• /shopxe kho - Xem kho xe\n• /shopxe banxe <tên xe> - Bán xe\n• /shopxe chuyenxe @tag - Chuyển xe\n• /shopxe gopxe <tên xe> - Mua trả góp`, threadID, messageID);
+      }
+ // Các lệnh khác như banxe, chuyenxe, gopxe có thể thêm sau
 
-  return api.sendMessage(
-    `\u{1F4DD} Bạn chắc chắn muốn chuyển xe ${ten} cho ${mentions[tag]}?\n\u{2764}\uFE0F Hãy thả tim tin nhắn này để xác nhận.`,
-    threadID,
-    (err, info) => {
-      global.client.handleReaction.push({
-        name: "shopxe-chuyen",
-        messageID: info.messageID,
-        author: senderID,
-        tag, ten, index
-      });
+      default: return api.sendMessage("\u2753 Lệnh không hợp lệ, dùng /shopxe menu để xem hướng dẫn.", threadID, messageID);
     }
-  );
-}
-
-if (sub === "gopxe") {
-  const ten = args.slice(1).join(" ");
-  const xe = dsXe.find(x => x.ten.toLowerCase() === ten.toLowerCase());
-  if (!xe) return api.sendMessage("Xe không tồn tại!", threadID);
-  const datcoc = Math.floor(xe.gia * 0.25);
-  userData.noGop.push({ ten: xe.ten, tong: xe.gia, conlai: xe.gia - datcoc, ngay: Date.now() });
-  saveData();
-  return api.sendMessage(
-    `\u{1F4B3} \u0110 đã đặt cọc ${datcoc.toLocaleString()} VND để mua ${xe.ten}.\nMỗi ngày không góp sẽ bị tính lãi 2%.`,
-    threadID
-  );
-}
-
-},
-
-handleReaction: async function ({ api, event, handleReaction }) { const { userID, messageID } = event; if (userID !== handleReaction.author) return; const { tag, ten, index } = handleReaction; const nguoiChuyen = database.users[handleReaction.author]; const nguoiNhan = database.users[tag] || { kho: [] }; if (!database.users[tag]) database.users[tag] = nguoiNhan;
-
-const xe = nguoiChuyen.kho[index];
-nguoiChuyen.kho.splice(index, 1);
-xe.cccd = tag;
-xe.chuXe = (await api.getUserInfo(tag))[tag].name;
-nguoiNhan.kho.push(xe);
-saveData();
-
-api.unsendMessage(messageID);
-return api.sendMessage(
-  `\u{1F4B5} \u0110 đã chuyển xe ${ten} thành công cho ${xe.chuXe}.
-\n\u2728 Cập nhật giấy sở hữu mới.`, event.threadID ); } };
-
+  }
+};
