@@ -1,96 +1,85 @@
 const fs = require("fs");
-const path = __dirname + "/cache/violations.json";
-
-if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({}));
+const path = __dirname + "/canhbao-data.json";
 
 module.exports = {
   config: {
     name: "canhbao",
     version: "1.0",
     hasPermission: 1,
-    credits: "Dat Thanh",
-    description: "Cảnh báo khi người dùng chửi tục và xử lý khi vi phạm quá giới hạn",
-    commandCategory: "group-admin",
-    usages: "[listvipham | del <UID> | kick <UID>]",
-    cooldowns: 1,
+    credits: "DatThanh",
+    description: "Cảnh báo khi người dùng nhắn tục và quản lý vi phạm",
+    commandCategory: "Quản trị nhóm",
+    usages: "/canhbao listvipham | del UID | kick UID",
+    cooldowns: 5,
   },
 
-  handleEvent: async function ({ event, api }) {
-    const { threadID, senderID, body } = event;
-    if (!body) return;
+  handleEvent: async function ({ api, event }) {
+    const toxicWords = ["lồn", "cặc","chịch", "đụ", "vú"];
+    if (!event.body || !toxicWords.some(word => event.body.toLowerCase().includes(word))) return;
+    if (event.senderID == api.getCurrentUserID()) return;
 
-    const tuCam = ["lồn", "cặc", "đụ", "chịch"];
-    const text = body.toLowerCase();
-    const viPham = tuCam.filter(tu => text.includes(tu));
-    if (viPham.length === 0) return;
+    const uid = event.senderID;
+    const name = (await api.getUserInfo(uid))[uid]?.name || "Không rõ";
+    const threadID = event.threadID;
 
-    let data = JSON.parse(fs.readFileSync(path));
-    if (!data[senderID]) data[senderID] = [];
+    // Load data
+    let data = {};
+    if (fs.existsSync(path)) data = JSON.parse(fs.readFileSync(path));
+    if (!data[uid]) data[uid] = { name, count: 0, history: [] };
 
-    data[senderID].push(...viPham);
+    // Cập nhật vi phạm
+    data[uid].count++;
+    data[uid].history.push(event.body);
     fs.writeFileSync(path, JSON.stringify(data, null, 2));
 
-    const soLan = data[senderID].length;
+    // Gửi cảnh báo
+    const msg = `⚠️ @${name}, dcm văn hoá m chó tha à! (${data[uid].count}/3 lần vi phạm)`;
+    api.sendMessage({ body: msg, mentions: [{ tag: name, id: uid }] }, threadID);
 
-    const name = await api.getUserInfo(senderID).then(res => res[senderID].name);
-
-    const msg = {
-      body: `⚠️ @${name} vừa sử dụng từ ngữ không phù hợp: [${viPham.join(", ")}]\n` +
-            `Đã vi phạm ${soLan} lần.\n` +
-            (soLan >= 3 ? "Bạn đã vượt quá số lần cho phép, tạm biệt!" : "Nếu còn tiếp tục sẽ bị đuổi khỏi nhóm."),
-      mentions: [{
-        tag: `@${name}`,
-        id: senderID
-      }]
-    };
-
-    await api.sendMessage(msg, threadID);
-
-    if (soLan >= 3) {
-      try {
-        await api.removeUserFromGroup(senderID, threadID);
-      } catch (err) {
-        await api.sendMessage(`Không thể kick ${name}. Bot cần quyền quản trị viên.`, threadID);
-      }
+    // Kick nếu quá 3 lần
+    if (data[uid].count >= 3) {
+      api.sendMessage(`❌ ${name} đã bị kick do vi phạm quá 3 lần.`, threadID, () => {
+        api.removeUserFromGroup(uid, threadID);
+        delete data[uid];
+        fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      });
     }
   },
 
-  run: async function ({ event, api, args }) {
-    const { threadID, messageID } = event;
-    const data = JSON.parse(fs.readFileSync(path));
+  run: async function ({ event, args, api }) {
+    const data = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path)) : {};
+    const [action, uid] = args;
 
-    const cmd = args[0];
-    const targetID = args[1];
+    if (action === "listvipham") {
+      if (Object.keys(data).length === 0) return api.sendMessage("✅ Không có ai vi phạm.", event.threadID);
 
-    if (cmd === "listvipham") {
-      if (Object.keys(data).length === 0) return api.sendMessage("Không có ai vi phạm.", threadID, messageID);
-
-      let msg = "=== Danh sách người vi phạm ===\n";
-      for (const [uid, list] of Object.entries(data)) {
-        const name = await api.getUserInfo(uid).then(res => res[uid]?.name || "Không rõ");
-        msg += `• ${name} (${uid}): ${list.length} lần\n`;
+      let msg = "📋 Danh sách người vi phạm:\n\n";
+      for (const id in data) {
+        const name = data[id].name || id;
+        const history = data[id].history.slice(-3).map((t, i) => `${i + 1}. "${t}"`).join("\n");
+        msg += `• ${name} (UID: ${id})\n- Số lần: ${data[id].count}\n- Gần nhất:\n${history}\n\n`;
       }
-
-      return api.sendMessage(msg, threadID, messageID);
+      return api.sendMessage(msg.trim(), event.threadID);
     }
 
-    if (cmd === "del" && targetID) {
-      delete data[targetID];
+    if (!uid || !["del", "kick"].includes(action))
+      return api.sendMessage("Dùng:\n/canhbao listvipham\n/canhbao del UID\n/canhbao kick UID", event.threadID);
+
+    const name = data[uid]?.name || uid;
+
+    if (action === "del") {
+      delete data[uid];
       fs.writeFileSync(path, JSON.stringify(data, null, 2));
-      return api.sendMessage(`Đã xoá lịch sử vi phạm của UID: ${targetID}`, threadID, messageID);
+      return api.sendMessage(`✅ Đã xoá lịch sử vi phạm của ${name}`, event.threadID);
     }
 
-    if (cmd === "kick" && targetID) {
-      delete data[targetID];
-      fs.writeFileSync(path, JSON.stringify(data, null, 2));
-      try {
-        await api.removeUserFromGroup(targetID, threadID);
-        return api.sendMessage(`Đã xoá và kick UID: ${targetID}`, threadID, messageID);
-      } catch (err) {
-        return api.sendMessage("Không thể kick. Bot không đủ quyền.", threadID, messageID);
-      }
+    if (action === "kick") {
+      api.removeUserFromGroup(uid, event.threadID, err => {
+        if (err) return api.sendMessage("Không thể kick người dùng.", event.threadID);
+        delete data[uid];
+        fs.writeFileSync(path, JSON.stringify(data, null, 2));
+        return api.sendMessage(`❌ Đã kick ${name} và xoá khỏi danh sách vi phạm.`, event.threadID);
+      });
     }
-
-    return api.sendMessage("Sai cú pháp. Dùng: listvipham, del <UID>, kick <UID>", threadID, messageID);
   }
 };
