@@ -17,8 +17,7 @@ module.exports = { config: { name: "shopxe", version: "1.0", credits: "Dat Thanh
 const sub = args[0];
 
 if (sub === "list") {
-  let msg = "Danh sách xe hiện có:
-"; for (const xe of dsXe) msg += • ${xe.ten} - ${xe.gia.toLocaleString()} VND ; return api.sendMessage(msg, threadID, messageID); }
+  let msg = "Danh sách xe hiện có:"; for (const xe of dsXe) msg += • ${xe.ten} - ${xe.gia.toLocaleString()} VND ; return api.sendMessage(msg, threadID, messageID); }
 
 if (sub === "muaxe") {
   const tenXe = args.slice(1).join(" ");
@@ -46,7 +45,6 @@ if (sub === "muaxe") {
 if (sub === "kho") {
   if (userData.kho.length === 0) return api.sendMessage("Bạn chưa sở hữu chiếc xe nào!", threadID);
   let msg = `\u{1F4C2} Kho xe của ${name}:
-
 ; userData.kho.forEach((x, i) => { msg += #${i + 1}. ${x.ten} - Biển số: ${x.bienSo} `; }); return api.sendMessage(msg, threadID); }
 
 if (sub === "menu") {
