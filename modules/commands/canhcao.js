@@ -1,131 +1,81 @@
-const fs = require("fs");
-const path = __dirname + "/canhbao.json";
+// Module: canhcao.js
 
-const forbiddenWords = ["đụ", "chịch", "lồn", "cặc", "vú"];
-const maxWarnings = 3;
+const fs = require("fs"); const path = require("path"); const warningPath = path.join(__dirname, "cache", "warnings.json");
 
-function loadData() {
-  return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path)) : {};
+if (!fs.existsSync(path.join(__dirname, "cache"))) fs.mkdirSync(path.join(__dirname, "cache")); if (!fs.existsSync(warningPath)) fs.writeFileSync(warningPath, JSON.stringify({}));
+
+module.exports.config = { name: "canhcao", version: "1.1.0", hasPermssion: 1, credits: "Dat Thanh", description: "Cảnh cáo thành viên dùng từ ngữ không phù hợp và tự động kick nếu vượt quá giới hạn", commandCategory: "Quản trị nhóm", usages: "[menu|listvipham|del|kick]", cooldowns: 3 };
+
+const VIOLATION_WORDS = ["đụ", "chịch", "lồn", "cặc", "vú"]; const MAX_WARNINGS = 3;
+
+module.exports.handleEvent = async function ({ event, api, Users }) { try { if (event.senderID === api.getCurrentUserID()) return; const { threadID, messageID, senderID, body } = event; if (!body) return;
+
+const content = body.toLowerCase();
+const violatedWord = VIOLATION_WORDS.find(word => content.includes(word));
+if (!violatedWord) return;
+
+const warningsData = JSON.parse(fs.readFileSync(warningPath));
+if (!warningsData[senderID]) warningsData[senderID] = { count: 0 };
+
+warningsData[senderID].count += 1;
+fs.writeFileSync(warningPath, JSON.stringify(warningsData, null, 2));
+
+const name = await Users.getNameUser(senderID);
+const count = warningsData[senderID].count;
+
+api.sendMessage({
+  body: `⚠️ Cảnh báo: ${name} (UID: ${senderID}) đã vi phạm từ ngữ quy định: "${violatedWord}"
+
+Hiện tại bạn đang ở mức cảnh cáo (${count}/${MAX_WARNINGS}) Nếu vi phạm thêm sẽ bị loại khỏi nhóm!`, mentions: [{ tag: name, id: senderID }] }, threadID, async (err, info) => { if (!err) api.reactToMessage(info.messageID, '😡'); });
+
+if (count >= MAX_WARNINGS) {
+  delete warningsData[senderID];
+  fs.writeFileSync(warningPath, JSON.stringify(warningsData, null, 2));
+  return api.removeUserFromGroup(senderID, threadID);
 }
 
-function saveData(data) {
-  fs.writeFileSync(path, JSON.stringify(data, null, 2));
-}
+} catch (err) { console.error("[canhcao.handleEvent]", err); } };
 
-module.exports = {
-  config: {
-    name: "canhcao",
-    version: "3.0",
-    hasPermission: 1,
-    credits: "DatThanh",
-    description: "Cảnh báo người vi phạm ngôn từ cấm và xử lý.",
-    commandCategory: "group",
-    usages: "[menu | listvipham | del | kick]",
-    cooldowns: 3,
-  },
+module.exports.run = async function ({ api, event, args, Users }) { const { threadID, messageID, senderID, mentions } = event; const warningsData = JSON.parse(fs.readFileSync(warningPath));
 
-  handleEvent: async ({ event, api, Users }) => {
-    const { body, senderID, threadID, messageID } = event;
-    if (!body || event.isGroup === false || senderID == api.getCurrentUserID()) return;
+const command = args[0]?.toLowerCase(); switch (command) { case "menu": { return api.sendMessage("[ 𝗖𝗔̉𝗡𝗛 𝗖𝗔́𝗢 𝗕𝗢𝗧 ]\n\n⚠️ Vi phạm: " + VIOLATION_WORDS.join(", ") + \n\n- Gửi tin nhắn chứa từ bị cấm sẽ bị cảnh cáo\n- Cảnh cáo 3 lần sẽ bị kick\n\nLệnh hỗ trợ:\n/canhcao listvipham\n/canhcao del (rep hoặc tag hoặc uid)\n/canhcao kick (rep hoặc tag hoặc uid), threadID); }
 
-    const text = body.toLowerCase();
-    const violatedWord = forbiddenWords.find(w => text.includes(w));
-    if (!violatedWord) return;
+case "listvipham": {
+  if (!Object.keys(warningsData).length)
+    return api.sendMessage("✅ Không có người vi phạm nào!", threadID);
 
-    const data = loadData();
-    data[senderID] = data[senderID] || { count: 0 };
-    data[senderID].count += 1;
-    saveData(data);
-
-    const name = (await Users.getNameUser(senderID)) || "Không rõ";
-    const count = data[senderID].count;
-
-    // Thả emoji vào tin nhắn
-    api.setMessageReaction("😡", event.messageID, () => {}, true);
-
-    // Cảnh báo đẹp
-    const warningText = `
-━━━━━━━━━━━━━━━━━━━━
-⚠️  𝗖𝗔̉𝗡𝗛 𝗕𝗔́𝗢 𝗩𝗜 𝗣𝗛𝗔̣𝗠  ⚠️
-━━━━━━━━━━━━━━━━━━━━
-👤  Người vi phạm: ${name}
-🆔  UID: ${senderID}
-❗  Từ bị cấm: "${violatedWord}"
-📌  Lần vi phạm: ${count}/${maxWarnings}
-━━━━━━━━━━━━━━━━━━━━
-⚠️  Nếu vi phạm đủ ${maxWarnings} lần, bạn sẽ bị loại khỏi nhóm!`;
-
-    api.sendMessage({
-      body: warningText,
-      mentions: [{ id: senderID, tag: name }]
-    }, threadID, () => {
-      if (count >= maxWarnings) {
-        api.removeUserFromGroup(senderID, threadID);
-        delete data[senderID];
-        saveData(data);
-      }
-    }, messageID);
-  },
-
-  run: async ({ event, api, args, Users }) => {
-    const { threadID, messageID, mentions, messageReply } = event;
-    const sub = args[0];
-    const data = loadData();
-
-    // Menu lệnh
-    if (!sub || sub.toLowerCase() === "menu") {
-      const msg = `
-━━━━━━━━━━━━━━
-📜  𝐌𝐄𝐍𝐔 𝐂𝐀̉𝐍𝐇 𝐂𝐀́𝐎
-━━━━━━━━━━━━━━
-⚠️  Tự động cảnh báo khi có:
-➡️  đụ | chịch | lồn | cặc | vú
-
-🛠️  Lệnh quản lý:
-• /canhcao listvipham – Xem người vi phạm
-• /canhcao del [reply/tag/uid] – Xoá người khỏi danh sách
-• /canhcao kick [reply/tag/uid] – Kick người khỏi nhóm
-━━━━━━━━━━━━━━
-⛔  Vi phạm 3 lần sẽ bị kick tự động!
-      `;
-      return api.sendMessage(msg, threadID, messageID);
-    }
-
-    // Lấy UID từ tag, reply hoặc args
-    let targetID = Object.keys(mentions)[0] || (messageReply && messageReply.senderID) || args[1];
-    if (!targetID) return api.sendMessage("Vui lòng reply, tag hoặc nhập UID.", threadID);
-
-    const name = (await Users.getNameUser(targetID)) || "Không rõ";
-
-    if (sub == "del") {
-      if (!data[targetID]) return api.sendMessage("Người này không có trong danh sách vi phạm.", threadID);
-      delete data[targetID];
-      saveData(data);
-      return api.sendMessage(`✅ Đã xoá ${name} (UID: ${targetID}) khỏi danh sách vi phạm.`, threadID);
-    }
-
-    if (sub == "kick") {
-      if (!data[targetID]) return api.sendMessage("Không thấy người này trong danh sách vi phạm.", threadID);
-      delete data[targetID];
-      saveData(data);
-      api.removeUserFromGroup(targetID, threadID, err => {
-        if (err) return api.sendMessage("❌ Không thể kick người dùng này.", threadID);
-        api.sendMessage(`🔨 Đã kick ${name} (UID: ${targetID}) khỏi nhóm.`, threadID);
-      });
-      return;
-    }
-
-    if (sub == "listvipham") {
-      const list = Object.keys(data);
-      if (!list.length) return api.sendMessage("✅ Không có ai vi phạm!", threadID);
-
-      const msg = list.map((id, i) => 
-        `#${i+1}. 👤 ${(await Users.getNameUser(id)) || "Không rõ"}\n🆔 UID: ${id}\n⚠️ Số lần vi phạm: ${data[id].count}`
-      ).join("\n\n");
-
-      return api.sendMessage(`📋 𝐃𝐀𝐍𝐇 𝐒𝐀́𝐂𝐇 𝐕𝐈 𝐏𝐇𝐀̣𝐌:\n━━━━━━━━━━━━━━\n${msg}`, threadID);
-    }
-
-    return api.sendMessage("Lệnh không hợp lệ. Dùng: /canhcao menu | listvipham | del | kick", threadID);
+  let msg = "📋 Danh sách người vi phạm:\n\n";
+  let i = 1;
+  for (const [id, info] of Object.entries(warningsData)) {
+    const name = await Users.getNameUser(id);
+    msg += `#${i++}. 👤 ${name || "Không rõ"}\n🆔 UID: ${id}\n⚠️ Số lần vi phạm: ${info.count}\n\n`;
   }
-};
+
+  return api.sendMessage(msg, threadID);
+}
+
+case "del": {
+  let targetID = Object.keys(mentions)[0] || event.messageReply?.senderID || args[1];
+  if (!targetID || !warningsData[targetID]) return api.sendMessage("Không tìm thấy người dùng trong danh sách vi phạm!", threadID);
+  delete warningsData[targetID];
+  fs.writeFileSync(warningPath, JSON.stringify(warningsData, null, 2));
+  return api.sendMessage(`✅ Đã xóa khỏi danh sách cảnh cáo UID: ${targetID}`, threadID);
+}
+
+case "kick": {
+  let targetID = Object.keys(mentions)[0] || event.messageReply?.senderID || args[1];
+  if (!targetID || !warningsData[targetID]) return api.sendMessage("Không tìm thấy người dùng trong danh sách vi phạm!", threadID);
+  delete warningsData[targetID];
+  fs.writeFileSync(warningPath, JSON.stringify(warningsData, null, 2));
+  api.removeUserFromGroup(targetID, threadID, err => {
+    if (err) return api.sendMessage("Không thể kick người dùng!", threadID);
+    return api.sendMessage(`👢 Đã kick UID: ${targetID} khỏi nhóm`, threadID);
+  });
+  break;
+}
+
+default:
+  return api.sendMessage("[ 𝗖𝗔𝗡𝗛 𝗖𝗔́𝗢 ] → Sai cú pháp, hãy dùng /canhcao menu để xem hướng dẫn.", threadID);
+
+} };
+
