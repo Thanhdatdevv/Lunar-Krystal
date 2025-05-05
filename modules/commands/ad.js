@@ -1,49 +1,38 @@
+const fs = require("fs");
+const path = require("path");
+
 module.exports = {
   config: {
     name: "ad",
-    version: "2.0",
+    version: "1.0",
     hasPermission: 0,
-    credits: "GPT Rewrite for Dat",
-    description: "Tự động phản hồi khi nhắc đến tên admin",
-    commandCategory: "Hệ thống",
-    usages: "",
-    cooldowns: 0
+    credits: "Dat Thanh",
+    description: "Phản hồi khi ai đó nhắc đến tên chủ của Nhi",
+    commandCategory: "events",
+    usages: "Tự động",
+    cooldowns: 1,
   },
 
-  handleEvent: async function ({ event, api, Users }) {
-    const { body, threadID, messageID, senderID } = event;
-    if (!body) return;
+  handleEvent: async function ({ event, message }) {
+    const text = event.body?.toLowerCase();
+    if (!text) return;
 
-    const text = body.toLowerCase();
-    const nameKeywords = ["đạt", "dat", "thanhdat", "datthanh"];
-    const matched = nameKeywords.some(keyword => text.includes(keyword));
+    const keywords = ["đạt", "dat", "dat thanh", "thanh dat", "đạt thành", "thành đạt"];
+    const matched = keywords.some(keyword => text.includes(keyword));
 
-    if (!matched) return;
+    // Bỏ qua nếu người gửi là chính bot
+    if (event.senderID == global.botID) return;
 
-    const senderName = await Users.getNameUser(senderID);
-    const replyText = 
-`Bạn gọi chủ tớ đấy à ${senderName}?
-Đây là chủ của tớ nè:
-• Tên: Lê Thành Đạt
-• Năm sinh: 2006
-• Cung: cung khủ
-Muốn liên lạc/mua bot thì call ảnh nha!`;
+    if (matched) {
+      const videoPath = path.join(__dirname, "dat.mp4"); // đổi tên file nếu cần
+      if (!fs.existsSync(videoPath)) return message.reply("Không tìm thấy video chủ của Nhi rồi!");
 
-    const videoList = [
-      "https://i.imgur.com/7OQBaMo.mp4",
-      "https://i.imgur.com/ruOTcU1.mp4",
-      "https://i.imgur.com/TwGBUTa.mp4",
-      "https://i.imgur.com/mRWp5j2.mp4"
-    ];
-    const randomVideo = videoList[Math.floor(Math.random() * videoList.length)];
-
-    return api.sendMessage({
-      body: replyText,
-      attachment: await api.getStreamFromURL(randomVideo)
-    }, threadID, messageID);
+      return message.reply({
+        body: "Bạn nhắc gì chủ Nhi ấy?\nXin chào đây là chủ của Nhi 🤗💦",
+        attachment: fs.createReadStream(videoPath)
+      });
+    }
   },
 
-  run: async function () {
-    // Không dùng lệnh trực tiếp
-  }
+  run: () => {}
 };
