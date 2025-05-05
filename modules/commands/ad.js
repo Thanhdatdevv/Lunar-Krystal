@@ -24,7 +24,7 @@ module.exports = {
     if (event.senderID == global.botID) return;
 
     if (matched) {
-      const videoPath = path.join(__dirname, "dat.mp4"); // đổi tên file nếu cần
+      const videoPath = path.join(__dirname, "7OQBaMo.mp4"); // đổi tên file nếu cần
       if (!fs.existsSync(videoPath)) return message.reply("Không tìm thấy video chủ của Nhi rồi!");
 
       return message.reply({
