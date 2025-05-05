@@ -7,8 +7,10 @@ const dataPath = path.join(__dirname, "shopxe_data.json"); if (!fs.existsSync(da
 // Giá xe demo (có thể mở rộng thêm) const dsXe = [ { ten: "Lamborghini Aventador", loai: "sieudua", gia: 15000000000 }, { ten: "Ferrari SF90", loai: "sieudua", gia: 12000000000 }, { ten: "Ducati Panigale V4", loai: "pkl", gia: 1000000000 }, { ten: "SH 150i", loai: "tayga", gia: 120000000 }, { ten: "Vision 2023", loai: "tayga", gia: 40000000 } ];
 
 function saveData() { fs.writeJSONSync(dataPath, database); }
-
-function genBienSo() { const num = Math.floor(Math.random() * 300) + 76000; return RZX${num}; }
+function genBienSo() {
+  const num = Math.floor(Math.random() * 300) + 76000;
+  return `RZX${num}`;
+}
 
 module.exports = { config: { name: "shopxe", version: "1.0", credits: "Dat Thanh", description: "Quản lý mua bán xe, chức năng chuyenxe, gopxe", commandCategory: "Tiện ích", usages: "/shopxe <lệnh>", hasPrefix: true, cooldowns: 3 }, run: async function ({ api, event, args }) { const { threadID, senderID, messageID, mentions } = event; const name = (await api.getUserInfo(senderID))[senderID].name; const userData = database.users[senderID] || { kho: [], noGop: [] }; if (!database.users[senderID]) database.users[senderID] = userData;
 
@@ -16,7 +18,6 @@ const sub = args[0];
 
 if (sub === "list") {
   let msg = "Danh sách xe hiện có:
-
 "; for (const xe of dsXe) msg += • ${xe.ten} - ${xe.gia.toLocaleString()} VND ; return api.sendMessage(msg, threadID, messageID); }
 
 if (sub === "muaxe") {
