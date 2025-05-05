@@ -296,7 +296,7 @@ module.exports = {
 
     const threadID = event.threadID;
     const senderID = event.senderID;
-    const message = event.body?.toLowerCase() || "";
+   const message = (event.body || "").toLowerCase();
     const name = (await Users.getNameUser(senderID)) || "bạn";
 
     if (status[threadID]) {
@@ -316,8 +316,7 @@ module.exports = {
         }
 
         if (message.includes("set biệt danh cho tôi là")) {
-          const nickname = message.split("set biệt danh cho tôi là")[1]?.trim();
-          if (!nickname) return;
+       const nickname = message.split("set biệt danh cho tôi là")[1].trim();
           try {
             await api.changeNickname(nickname, threadID, senderID);
             return api.sendMessage(`Đã đặt biệt danh là ${nickname} nha~`, threadID, event.messageID);
@@ -327,7 +326,7 @@ module.exports = {
         }
 
         if (senderID === husbandUID && message.includes("set biệt danh cho anh là")) {
-          const nickname = message.split("set biệt danh cho anh là")[1]?.trim();
+          const nickname = message.split("set biệt danh cho anh là")[1].trim();
           if (!nickname) return;
           try {
             await api.changeNickname(nickname, threadID, senderID);
@@ -358,7 +357,7 @@ module.exports = {
 
   run: async function ({ event, api }) {
     const { threadID, messageID, body } = event;
-    const msg = body?.toLowerCase() || "";
+   const msg = (body && body.toLowerCase()) || "";
 
     if (msg === "nhi on") {
       if (status[threadID]) return api.sendMessage("Nhi đã bật sẵn rồi mà~", threadID, messageID);
