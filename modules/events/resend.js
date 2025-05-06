@@ -1,30 +1,66 @@
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+
 module.exports.config = {
   name: "resend",
-  eventType: ["message_unsend"],
-  version: "1.1",
+  eventType: ["message", "message_unsend"],
+  version: "1.0.0",
   credits: "Dat Thanh",
-  description: "Gửi lại tin nhắn bị thu hồi (ảnh, video, file...)"
+  description: "Gửi lại tin nhắn đã thu hồi"
 };
 
-module.exports.handleEvent = async function({ api, event, Users }) {
-  const { messageID, senderID, threadID } = event;
+let messageStore = {};
 
-  if (!global._unsendMessages) return;
+module.exports.handleEvent = async function ({ api, event }) {
+  const { type, messageID, senderID, threadID, body, attachments } = event;
 
-  const msg = global._unsendMessages[messageID];
-  if (!msg) return;
+  // Lưu tin nhắn
+  if (type === "message") {
+    messageStore[messageID] = {
+      body,
+      attachments,
+      senderID,
+      threadID,
+      timestamp: Date.now()
+    };
+    return;
+  }
 
-  const name = (await Users.getNameUser(senderID)) || "Người dùng";
-  let msgText = `⚠️ 𝗕𝗔̣𝗡 𝗧𝗨̛𝗢̛̉𝗡𝗚 𝗕𝗔̣𝗡 𝗫𝗢𝗔́ 𝗟𝗔̀ 𝗧𝗛𝗢𝗔́𝗧 𝗔̀ 👀\n`;
-  msgText += `Người thu hồi: ${name} (UID: ${senderID})\n`;
-  if (msg.body) msgText += `💬 Nội dung: ${msg.body}`;
+  // Khi tin nhắn bị thu hồi
+  if (type === "message_unsend" && messageStore[messageID]) {
+    const msg = messageStore[messageID];
+    const name = await getUserName(api, msg.senderID);
 
-  const sendData = {
-    body: msgText,
-    attachment: msg.attachments || []
-  };
+    let resendText = `『 𝙍𝙀𝙎𝙀𝙉𝘿 』\n━━━━━━━━━━━━\n`;
+    resendText += `👤 𝗧𝗲̂𝗻: ${name}\n`;
+    resendText += `🕒 𝗫𝗼𝗮́ 𝗟𝨈́𝗰: ${new Date().toLocaleTimeString()}\n`;
+    resendText += `📝 𝗡𝗼̣̂𝗶 𝗗𝘂𝗻𝗴: ${msg.body || "Không có nội dung"}\n`;
+    resendText += `\n» 𝙱𝚊̣𝚗 𝚝𝚞̛𝚘̛̉𝚗𝚐 𝚋𝚊̣𝚗 𝚡𝚘́𝚊 𝚕𝚊̀ 𝚝𝚑𝚘𝚊́𝚝 𝚊̀ 👀`;
 
-  return api.sendMessage(sendData, threadID);
+    const files = [];
+
+    if (msg.attachments.length > 0) {
+      for (const item of msg.attachments) {
+        try {
+          const res = await axios.get(item.url, { responseType: "stream" });
+          files.push(res.data);
+        } catch (err) {
+          console.log("Không thể gửi lại tệp:", err.message);
+        }
+      }
+    }
+
+    api.sendMessage({ body: resendText, attachment: files }, msg.threadID);
+    delete messageStore[messageID];
+  }
 };
 
-module.exports.run = async () => {};
+async function getUserName(api, userID) {
+  try {
+    const info = await api.getUserInfo(userID);
+    return info[userID].name || "Người dùng";
+  } catch {
+    return "Người dùng";
+  }
+}
