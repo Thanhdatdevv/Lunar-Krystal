@@ -1,86 +1,75 @@
-const fs = require("fs-extra"); const path = require("path"); const { getStreamFromURL } = global.utils;
+//================= cauca.js - Module Câu Cá ===================//
 
-const dataPath = path.join(__dirname, "cauca", "data.json"); const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+module.exports.config = { name: "cauca", version: "1.0.1", hasPermssion: 0, credits: "GPT-Mirai", description: "Câu cá và kiếm tiền, mua cần câu, xem top", commandCategory: "Game", usages: "/cauca | /cauca shop | /cauca mua [tên] | /cauca top", cooldowns: 10 };
 
-if (!fs.existsSync(path.dirname(dataPath))) fs.mkdirSync(path.dirname(dataPath)); if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({}), "utf-8");
+const fs = require("fs-extra"); const path = __dirname + "/cache/cauca.json"; const delay = ms => new Promise(res => setTimeout(res, ms));
 
-const caList = [ { name: "Giày", rate: 12, reward: 0 }, { name: "Rác", rate: 12, reward: 0 }, { name: "Giun", rate: 10, reward: 1000 }, { name: "Cá muối", rate: 10, reward: 5000 }, { name: "Cá thu", rate: 8, reward: 8000 }, { name: "Cá diêu hồng", rate: 7, reward: 9000 }, { name: "Mực", rate: 6, reward: 12000 }, { name: "Bạch tuột", rate: 5, reward: 15000 }, { name: "Cá đuối", rate: 4, reward: 17000 }, { name: "Cá vàng", rate: 3.5, reward: 20000 }, { name: "Cá vây xanh", rate: 2.5, reward: 25000 }, { name: "Cá mập", rate: 2, reward: 30000 }, { name: "Cá sấu", rate: 1.5, reward: 40000 }, { name: "Lươn điện", rate: 1.2, reward: 50000 }, { name: "Cá rồng", rate: 0.5, reward: 500000 }, { name: "Leviathan", rate: 0.4, reward: 600000 }, { name: "Mega cá mập", rate: 0.3, reward: 700000 }, { name: "Mặc khổng lồ", rate: 0.3, reward: 700000 }, { name: "Megalondon", rate: 0.3, reward: 700000 }, { name: "Cá tiên", rate: 0.2, reward: 800000 }, { name: "Thủy Ngân Long Vương", rate: 0.01, reward: 10000000000, isBoss: true } ];
+const rods = { "gỗ": { price: 0, bonus: 0 }, "bạc": { price: 5000, bonus: 0.1 }, "vàng": { price: 50000, bonus: 0.2 }, "kim cương": { price: 500000, bonus: 0.4 }, "vip": { price: 10000000, bonus: 4.1 }, "luxury": { price: 1000000000, bonus: 10.0 } };
 
-const rods = { "gỗ": { name: "Cần câu gỗ", bonus: 0, price: 0 }, "bạc": { name: "Cần câu bạc", bonus: 0.1, price: 5000 }, "vàng": { name: "Cần câu vàng", bonus: 0.2, price: 50000 }, "kim cương": { name: "Cần câu kim cương", bonus: 0.3, price: 200000 }, "vip": { name: "Cần câu VIP", bonus: 0.41, price: 10000000 }, "luxury": { name: "Cần câu Luxury", bonus: 1.0, price: 1000000000 } };
+const fishes = [ { name: "Giày rách", rate: 15, money: 100 }, { name: "Rác", rate: 10, money: 50 }, { name: "Giun", rate: 8, money: 200 }, { name: "Cá diêu hồng", rate: 7, money: 500 }, { name: "Cá thu", rate: 6, money: 1000 }, { name: "Cá vàng", rate: 5, money: 2000 }, { name: "Cá mực", rate: 5, money: 3000 }, { name: "Cá đuối", rate: 4, money: 5000 }, { name: "Cá vây xanh", rate: 3, money: 7000 }, { name: "Cá tiên", rate: 1, money: 50000 }, { name: "Cá sấu", rate: 1, money: 100000 }, { name: "Lươn điện", rate: 0.8, money: 200000 }, { name: "Cá rồng", rate: 0.5, money: 1000000 }, { name: "Leviathan", rate: 0.3, money: 3000000 }, { name: "Cá mập", rate: 0.2, money: 5000000 }, { name: "Megalondon", rate: 0.1, money: 10000000 }, { name: "Thủy Ngân Long Vương", rate: 0.01, money: 10000000000, boss: true } ];
 
-module.exports = { config: { name: "cauca", version: "1.1", author: "Dat Thanh", description: "Câu cá kiếm tiền, có shop và top!", usages: "/cauca hoặc /cauca shop, mua [tên], info, top", commandCategory: "game", cooldowns: 5 },
+function loadData() { return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path)) : {}; }
 
-onStart: async ({ event, message, args, usersData }) => { const uid = event.senderID; const data = JSON.parse(fs.readFileSync(dataPath)); if (!data[uid]) data[uid] = { rod: null, money: 0, caught: [] };
+function saveData(data) { fs.writeFileSync(path, JSON.stringify(data, null, 2)); }
 
-const send = (msg) => message.reply(msg);
+function pickFish(bonus) { const totalRate = fishes.reduce((t, f) => t + f.rate + bonus, 0); let rand = Math.random() * totalRate; for (let fish of fishes) { rand -= fish.rate + bonus; if (rand <= 0) return fish; } return fishes[0]; }
 
-const save = () => fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+module.exports.run = async function({ api, event, args, Currencies }) { const { threadID, senderID, messageID } = event; const data = loadData();
 
-const getRandomFish = (bonus) => {
-  const roll = Math.random() * 100;
-  let total = 0;
-  for (const fish of caList.sort((a, b) => a.rate - b.rate)) {
-    total += fish.rate + bonus;
-    if (roll < total) return fish;
+if (!data[senderID]) data[senderID] = { rod: "gỗ", money: 0 };
+
+const user = data[senderID];
+
+const send = msg => api.sendMessage(msg, threadID, messageID);
+
+switch (args[0]) { case "shop": { const list = Object.entries(rods).map(([name, { price, bonus }]) => • ${name} - ${price.toLocaleString()} VND (tăng ${bonus * 100}% rate)).join("\n"); return send([ SHOP CẦN CÂU ]\n${list}); }
+
+case "mua": {
+  const name = args.slice(1).join(" ");
+  if (!rods[name]) return send("Tên cần câu không tồn tại!");
+  const cost = rods[name].price;
+  const userMoney = await Currencies.getData(senderID).then(r => r.money);
+  if (userMoney < cost) return send("Bạn không đủ tiền mua cần câu này!");
+  user.rod = name;
+  saveData(data);
+  await Currencies.decreaseMoney(senderID, cost);
+  return send(`Mua cần câu ${name} thành công!`);
+}
+
+case "info": {
+  return send(`Bạn đang dùng cần câu: ${user.rod} | Tiền câu được: ${user.money.toLocaleString()} VND`);
+}
+
+case "top": {
+  const top = Object.entries(data)
+    .sort((a, b) => b[1].money - a[1].money)
+    .slice(0, 10)
+    .map(([id, d], i) => `${i + 1}. ${id} - ${d.money.toLocaleString()} VND`).join("\n");
+  return send(`[ BXH CÂU CÁ ]\n${top}`);
+}
+
+default: {
+  const rod = user.rod;
+  if (!rod || !rods[rod]) return send("Bạn chưa có cần câu, hãy dùng '/cauca shop' để xem và '/cauca mua [tên]' để mua.");
+
+  send("Đang thả mồi chờ cá cắn câu...");
+  await delay(10000);
+
+  const fish = pickFish(rods[rod].bonus);
+  user.money += fish.money;
+  saveData(data);
+  await Currencies.increaseMoney(senderID, fish.money);
+
+  if (fish.boss) {
+    return api.sendMessage({
+      body: `⚠️ 𝑩𝑶𝑺𝑺 ĐÃ CẮN CÂU ⚠️\n@${event.senderID} đã câu được con cá BOSS: ${fish.name}!!\nGiá trị: ${fish.money.toLocaleString()} VND!!`,
+      mentions: [{ tag: "@all", id: senderID }],
+      emoji: "\uD83D\uDEA8"
+    }, threadID);
   }
-  return caList[0];
-};
 
-if (args[0] === "shop") {
-  let msg = "[ 𝗦𝗛𝗢𝗣 𝗖𝗔̂̀𝗡 𝗖𝗔̂𝗨 ]\n";
-  for (const [key, rod] of Object.entries(rods)) {
-    msg += `→ ${rod.name} | +${Math.floor(rod.bonus * 100)}% | ${rod.price.toLocaleString()} VND\n`;
-  }
-  return send(msg);
+  return send(`Bạn đã câu được: ${fish.name} và nhận được ${fish.money.toLocaleString()} VND.`);
 }
-
-if (args[0] === "mua") {
-  const loai = args.slice(1).join(" ").toLowerCase();
-  if (!rods[loai]) return send("Không tìm thấy loại cần câu này!");
-  if (data[uid].money < rods[loai].price) return send("Bạn không đủ tiền để mua!");
-  data[uid].money -= rods[loai].price;
-  data[uid].rod = loai;
-  save();
-  return send(`Bạn đã mua ${rods[loai].name}`);
-}
-
-if (args[0] === "info") {
-  const rod = data[uid].rod ? rods[data[uid].rod].name : "Chưa có";
-  const caught = data[uid].caught.length;
-  return send(`→ Cần câu: ${rod}\n→ Cá đã câu: ${caught}\n→ Tiền: ${data[uid].money.toLocaleString()} VND`);
-}
-
-if (args[0] === "top") {
-  const sorted = Object.entries(data).sort((a, b) => b[1].money - a[1].money).slice(0, 10);
-  let msg = "[ 𝗧𝗢𝗣 𝗧𝗥𝗔𝗜 𝗖𝗔́ 𝗩𝗔̀𝗡𝗚 ]\n";
-  for (let i = 0; i < sorted.length; i++) {
-    const name = (await usersData.get(sorted[i][0])).name;
-    msg += `#${i + 1}. ${name} - ${sorted[i][1].money.toLocaleString()} VND\n`;
-  }
-  return send(msg);
-}
-
-// Bắt đầu câu cá
-if (!data[uid].rod) return send("Bạn chưa có cần câu. Dùng '/cauca shop' để xem và '/cauca mua [tên]' để mua!");
-
-send("Đang thả mồi... chờ cá cắn câu...");
-await delay(10000);
-
-const bonus = rods[data[uid].rod].bonus * 100;
-const fish = getRandomFish(bonus);
-data[uid].money += fish.reward;
-data[uid].caught.push(fish.name);
-save();
-
-if (fish.name === "Thủy Ngân Long Vương") {
-  return message.send({
-    body: `» 𝐁𝐎𝐒𝐒 𝐂𝐀́ 𝐓𝐇𝐔̛𝐎̛̣𝐍𝐆 «\n@everyone\n${event.senderName} đã câu được 𝗧𝗛𝗨̉𝗬 𝗡𝗚𝗔̂𝗡 𝗟𝗢𝗡𝗚 𝗩𝗨̛𝗢̛𝗡𝗚!!\nNhận được ${fish.reward.toLocaleString()} VND!`,
-    mentions: [{ tag: "@everyone", id: uid }]
-  });
-}
-
-const icon = fish.isBoss ? "🐉" : "🐟";
-return send(`${icon} Bạn đã câu được ${fish.name} và nhận được ${fish.reward.toLocaleString()} VND!`);
 
 } };
 
