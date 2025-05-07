@@ -1,21 +1,18 @@
 const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
 
 module.exports.config = {
   name: "resend",
   eventType: ["message", "message_unsend"],
-  version: "1.0.0",
+  version: "2.0.0",
   credits: "Dat Thanh",
-  description: "Gửi lại tin nhắn đã thu hồi"
+  description: "Gửi lại tin nhắn hoặc file bị thu hồi"
 };
 
-let messageStore = {};
+const messageStore = {};
 
-module.exports.handleEvent = async function ({ api, event }) {
+module.exports.handleEvent = async ({ event, api }) => {
   const { type, messageID, senderID, threadID, body, attachments } = event;
 
-  // Lưu tin nhắn
   if (type === "message") {
     messageStore[messageID] = {
       body,
@@ -27,40 +24,40 @@ module.exports.handleEvent = async function ({ api, event }) {
     return;
   }
 
-  // Khi tin nhắn bị thu hồi
-  if (type === "message_unsend" && messageStore[messageID]) {
+  if (type === "message_unsend") {
     const msg = messageStore[messageID];
-    const name = await getUserName(api, msg.senderID);
+    if (!msg) return;
 
-    let resendText = `『 𝙍𝙀𝙎𝙀𝙉𝘿 』\n━━━━━━━━━━━━\n`;
-    resendText += `👤 𝗧𝗲̂𝗻: ${name}\n`;
-    resendText += `🕒 𝗫𝗼𝗮́ 𝗟𝨈́𝗰: ${new Date().toLocaleTimeString()}\n`;
-    resendText += `📝 𝗡𝗼̣̂𝗶 𝗗𝘂𝗻𝗴: ${msg.body || "Không có nội dung"}\n`;
-    resendText += `\n» 𝙱𝚊̣𝚗 𝚝𝚞̛𝚘̛̉𝚗𝚐 𝚋𝚊̣𝚗 𝚡𝚘́𝚊 𝚕𝚊̀ 𝚝𝚑𝚘𝚊́𝚝 𝚊̀ 👀`;
+    let name = "Người dùng";
+    try {
+      const userInfo = await api.getUserInfo(msg.senderID);
+      name = userInfo[msg.senderID]?.name || name;
+    } catch {}
 
-    const files = [];
+    let messageText = `『 𝙍𝙀𝙎𝙀𝙉𝘿 』\n━━━━━━━━━━━━\n`;
+    messageText += `👤 𝗧𝗲̂𝗻: ${name}\n`;
+    messageText += `🕒 𝗫𝗼𝗮́ 𝗟𝨈́𝗰: ${new Date().toLocaleTimeString()}\n`;
+    messageText += `📝 𝗡𝗼̣̂𝗶 𝗗𝘂𝗻𝗴: ${msg.body || "Không có văn bản"}\n`;
+    messageText += `\n» 𝙱𝚊̣𝚗 𝚝𝚞̛𝚘̛̉𝚗𝚐 𝚡𝚘́𝚊 𝚕𝚖𝚊̀ 𝚔𝚘 𝚊𝚒 𝚋𝚒𝚎̂́𝚝 𝚊̀ 👀`;
 
-    if (msg.attachments.length > 0) {
-      for (const item of msg.attachments) {
-        try {
-          const res = await axios.get(item.url, { responseType: "stream" });
-          files.push(res.data);
-        } catch (err) {
-          console.log("Không thể gửi lại tệp:", err.message);
-        }
+    const attachmentsStream = [];
+    for (const attachment of msg.attachments || []) {
+      try {
+        const stream = await axios.get(attachment.url, { responseType: "stream" });
+        attachmentsStream.push(stream.data);
+      } catch (e) {
+        console.log("Lỗi tải file bị xoá:", e.message);
       }
     }
 
-    api.sendMessage({ body: resendText, attachment: files }, msg.threadID);
+    api.sendMessage(
+      {
+        body: messageText,
+        attachment: attachmentsStream
+      },
+      msg.threadID
+    );
+
     delete messageStore[messageID];
   }
 };
-
-async function getUserName(api, userID) {
-  try {
-    const info = await api.getUserInfo(userID);
-    return info[userID].name || "Người dùng";
-  } catch {
-    return "Người dùng";
-  }
-}
