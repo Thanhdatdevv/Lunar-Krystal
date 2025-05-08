@@ -37,7 +37,12 @@ const banner = `
 `;
 
 module.exports.handleEvent = async ({ api, event }) => {
-  const { body, threadID, messageID } = event;
+  const { body, threadID, messageID, senderID } = event;
+
+  // Kiểm tra nếu người gửi là bot (senderID == bot's ID)
+  const botID = api.getCurrentUserID(); // Lấy ID bot hiện tại
+  if (senderID == botID) return;  // Nếu người gửi là bot thì bỏ qua tin nhắn
+
   if (!body) return;
   const content = body.toLowerCase();
 
@@ -47,5 +52,11 @@ module.exports.handleEvent = async ({ api, event }) => {
 };
 
 module.exports.run = async ({ api, event }) => {
-  return api.sendMessage(banner, event.threadID, event.messageID);
+  const { threadID, messageID } = event;
+  
+  // Kiểm tra nếu người gửi là bot (senderID == bot's ID)
+  const botID = api.getCurrentUserID(); // Lấy ID bot hiện tại
+  if (event.senderID == botID) return;  // Nếu người gửi là bot thì bỏ qua tin nhắn
+
+  return api.sendMessage(banner, threadID, messageID);
 };
