@@ -1,86 +1,97 @@
-const users = {};
 const games = {};
 
 module.exports.config = {
   name: "taixiu",
-  version: "1.1",
+  version: "1.0.0",
   hasPermssion: 0,
   credits: "dat thanh",
-  description: "Chơi Tài Xỉu",
+  description: "Chơi tài xỉu ăn tiền",
   commandCategory: "game",
-  usages: "/taixiu create | join tài/xỉu <tiền> | xổ | list",
+  usages: "/taixiu create | join tài|xỉu <số tiền> | xổ",
   cooldowns: 3
 };
 
 module.exports.run = async ({ api, event, args, Currencies }) => {
   const { threadID, senderID, messageID } = event;
-  const command = args[0];
+  const input = args[0];
 
-  if (command === "create") {
-    if (games[threadID]) return api.sendMessage("⚠️ Bàn chơi đã tồn tại.", threadID, messageID);
+  // Tạo bàn
+  if (input === "create") {
+    if (games[threadID])
+      return api.sendMessage("⚠️ Đã có bàn đang diễn ra. Gõ /taixiu xổ để kết thúc trước.", threadID, messageID);
+
     games[threadID] = {
-      owner: senderID,
-      bets: {},
-      result: null,
-      timeout: setTimeout(() => endGame(api, threadID, Currencies), 60000)
+      author: senderID,
+      bets: []
     };
-    return api.sendMessage("🎲 Tạo bàn chơi thành công!\nDùng: /taixiu join tài/xỉu <tiền>", threadID, messageID);
+
+    return api.sendMessage("🎲 𝗖𝗔𝗦𝗜𝗡𝗢 𝗡𝗛𝗔̀ 𝗧𝗛𝗔𝗡𝗛 🎲\n\n✅ Bàn Tài Xỉu đã được tạo!\n→ Gõ: /taixiu join tài|xỉu <số tiền>", threadID);
   }
 
-  if (command === "join") {
-    const choice = args[1];
-    const bet = parseInt(args[2]);
-    if (!["tài", "xỉu"].includes(choice) || isNaN(bet) || bet < 1)
-      return api.sendMessage("⚠️ Dùng: /taixiu join tài/xỉu <tiền>", threadID, messageID);
+  // Tham gia cược
+  if (input === "join") {
+    const betSide = args[1]?.toLowerCase();
+    const betAmount = parseInt(args[2]);
+    if (!games[threadID])
+      return api.sendMessage("❌ Chưa có bàn nào, gõ: /taixiu create", threadID, messageID);
+    if (!["tài", "xỉu"].includes(betSide))
+      return api.sendMessage("⚠️ Chọn tài hoặc xỉu nhé.", threadID, messageID);
+    if (isNaN(betAmount) || betAmount <= 0)
+      return api.sendMessage("⚠️ Số tiền không hợp lệ.", threadID, messageID);
 
-    if (!games[threadID]) return api.sendMessage("⚠️ Chưa có bàn chơi. Dùng /taixiu create", threadID, messageID);
-    if (games[threadID].bets[senderID]) return api.sendMessage("⚠️ Bạn đã đặt rồi.", threadID, messageID);
+    const userMoney = (await Currencies.getData(senderID)).money || 0;
+    if (userMoney < betAmount)
+      return api.sendMessage("❌ Bạn không đủ tiền cược.", threadID, messageID);
 
-    const money = (await Currencies.getData(senderID)).money;
-    if (money < bet) return api.sendMessage("⚠️ Bạn không đủ tiền.", threadID, messageID);
+    const existingBet = games[threadID].bets.find(b => b.id == senderID);
+    if (existingBet)
+      return api.sendMessage("⚠️ Bạn đã cược rồi!", threadID, messageID);
 
-    games[threadID].bets[senderID] = { choice, bet };
-    return api.sendMessage(`✅ Đã đặt ${choice.toUpperCase()} với ${bet}$`, threadID, messageID);
+    await Currencies.decreaseMoney(senderID, betAmount);
+    games[threadID].bets.push({ id: senderID, side: betSide, money: betAmount });
+
+    return api.sendMessage(`✅ Đã cược ${betAmount}$ vào ${betSide.toUpperCase()}.`, threadID);
   }
 
-  if (command === "xổ") {
+  // Xổ tài xỉu
+  if (input === "xổ") {
     const game = games[threadID];
-    if (!game) return api.sendMessage("⚠️ Chưa có bàn chơi.", threadID, messageID);
-    if (game.owner !== senderID) return api.sendMessage("⚠️ Chỉ chủ bàn mới được xổ.", threadID, messageID);
-    clearTimeout(game.timeout);
-    return endGame(api, threadID, Currencies);
+    if (!game)
+      return api.sendMessage("❌ Chưa có bàn nào đang diễn ra.", threadID, messageID);
+    if (senderID != game.author)
+      return api.sendMessage("⚠️ Chỉ chủ bàn mới được xổ.", threadID, messageID);
+    if (game.bets.length == 0)
+      return api.sendMessage("⚠️ Chưa có ai cược.", threadID, messageID);
+
+    const dice = [rand(), rand(), rand()];
+    const total = dice[0] + dice[1] + dice[2];
+    const result = total >= 11 && total <= 17 ? "tài" : "xỉu";
+
+    let msg = `🎲 𝗧𝗔̀𝗜 𝗫𝗜̉𝗨 - 𝗖𝗔𝗦𝗜𝗡𝗢 𝗡𝗛𝗔̀ 𝗧𝗛𝗔𝗡𝗛 🎲\n`;
+    msg += `🎲 Kết quả: ${dice.join(" + ")} = ${total} → ${result.toUpperCase()}\n\n`;
+
+    let winners = 0, losers = 0, totalWin = 0;
+
+    for (const bet of game.bets) {
+      if (bet.side == result) {
+        await Currencies.increaseMoney(bet.id, bet.money * 2);
+        winners++;
+        totalWin += bet.money;
+      } else {
+        losers++;
+      }
+    }
+
+    msg += `✅ Người thắng: ${winners}\n❌ Người thua: ${losers}\n💰 Tổng tiền thắng: ${totalWin * 2}$`;
+    delete games[threadID];
+
+    return api.sendMessage(msg, threadID);
   }
 
-  if (command === "list") {
-    const list = games[threadID]?.history?.slice(-10).join("\n") || "Chưa có dữ liệu.";
-    return api.sendMessage(`📜 Lịch sử Tài Xỉu:\n${list}`, threadID, messageID);
-  }
+  // Mặc định
+  return api.sendMessage("⚠️ Sai cú pháp.\nDùng: /taixiu create | join tài|xỉu <số tiền> | xổ", threadID, messageID);
 };
 
-async function endGame(api, threadID, Currencies) {
-  const game = games[threadID];
-  if (!game) return;
-
-  const dice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
-  const total = dice.reduce((a, b) => a + b, 0);
-  const result = total >= 11 ? "tài" : "xỉu";
-
-  let msg = `🎲 Kết quả: [${dice.join(" + ")}] = ${total} → ${result.toUpperCase()}\n`;
-
-  for (const [uid, betData] of Object.entries(game.bets)) {
-    const { choice, bet } = betData;
-    if (choice === result) {
-      await Currencies.increaseMoney(uid, bet);
-      msg += `✅ UID ${uid} thắng +${bet}$\n`;
-    } else {
-      await Currencies.decreaseMoney(uid, bet);
-      msg += `❌ UID ${uid} thua -${bet}$\n`;
-    }
-  }
-
-  if (!game.history) game.history = [];
-  game.history.push(`🎲 ${result.toUpperCase()} (${dice.join(",")})`);
-
-  delete games[threadID];
-  api.sendMessage(msg, threadID);
+function rand() {
+  return Math.floor(Math.random() * 6) + 1;
 }
