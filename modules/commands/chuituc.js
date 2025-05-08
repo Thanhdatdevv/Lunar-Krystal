@@ -18,17 +18,17 @@ module.exports = {
     if (!text) return;
 
     const toxicWords = [
-      "lồn", "lon", "cặc", "cac", "địt", "djt", "đụ", 
+      "lồn", "cặc", "địt", "đụ", 
       "chịch", "đéo", "thằng ngu", "con đĩ", "peter", 
       "mary","bot ngu" ,"bot đần" ,"chem chép", "đĩ", "đỉ", "vú", "dú"
     ];
     
     const containsToxic = toxicWords.some(word => text.includes(word));
-    const containsQuestionMark = text.includes("?");
+    const containsQuestionMark = text.includes("#");
 
     if (containsToxic) {
       return api.sendMessage(
-        "Dcm văn hoá m chó tha à", 
+        "bot nhắc nhẹ bạn đang vi phạm từ ngữ không được quyền nói", 
         event.threadID, 
         event.messageID
       );
