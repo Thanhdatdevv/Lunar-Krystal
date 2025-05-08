@@ -7,7 +7,7 @@ module.exports.config = {
   credits: "Dat Thanh",
   description: "Trò chơi Ba Cào, Xì Dách, Tài Xỉu",
   commandCategory: "game",
-  usages: "/cobac",
+  usages: "/casino",
   cooldowns: 3
 };
 
@@ -24,16 +24,16 @@ module.exports.run = async ({ api, event }) => {
 ♠️ 𝐁𝐀 𝐂𝐀̀𝐎 🎴, 🃏 𝐗𝐢̀ 𝐃𝐚́𝐜𝐡 🃏 và 🎲 𝐓𝐚̀𝐢 𝐗𝐢̉𝐔 🎲
 
 Hãy chọn một trong các lệnh để chơi:
-1️⃣ • Tạo bàn Ba Cào
-2️⃣ • Tham gia Ba Cào
-3️⃣ • Bắt đầu Ba Cào (start)
-4️⃣ • Tạo phòng Xì Dách
-5️⃣ • Tham gia Xì Dách
-6️⃣ • Bắt đầu Xì Dách (start)
-7️⃣ • Tạo bàn Tài Xỉu
-8️⃣ • Tham gia Tài Xỉu
-9️⃣ • Bắt đầu Tài Xỉu (start)
-🔟 • Đặt cược Tài hoặc Xỉu
+1 • Tạo bàn Ba Cào
+2 • Tham gia Ba Cào
+3 • Bắt đầu Ba Cào (start)
+4 • Tạo phòng Xì Dách
+5 • Tham gia Xì Dách
+6 • Bắt đầu Xì Dách (start)
+7 • Tạo bàn Tài Xỉu
+8 • Tham gia Tài Xỉu
+9 • Bắt đầu Tài Xỉu (start)
+10 • Đặt cược Tài hoặc Xỉu
 `.trim();
 
   return api.sendMessage(menu, event.threadID, (err, info) => {
