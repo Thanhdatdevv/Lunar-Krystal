@@ -1,137 +1,104 @@
 const fs = require("fs");
-const path = __dirname + "/cache/bacao.json";
-let gameData = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path)) : {};
-let autoDeal = {};
+const path = __dirname + "/cache/taixiu.json";
+if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({}));
 
-function save() {
-  fs.writeFileSync(path, JSON.stringify(gameData, null, 2));
-}
+module.exports = {
+  config: {
+    name: "taixiu",
+    version: "1.0",
+    author: "Dat Thanh",
+    countDown: 5,
+    role: 0,
+    shortDescription: "Chơi Tài Xỉu ăn tiền",
+    longDescription: "Tạo và chơi tài xỉu, cược tiền",
+    category: "game",
+    guide: {
+      vi: "/taixiu create\n/taixiu join tài|xỉu <tiền>\n/taixiu xổ\n/taixiu list"
+    }
+  },
 
-function getCard() {
-  const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-  const suits = ['♠', '♥', '♦', '♣'];
-  const deck = [];
-  for (const r of ranks) for (const s of suits) deck.push(`${r}${s}`);
-  return deck.sort(() => Math.random() - 0.5);
-}
+  onStart({ args, event, message, usersData, threadsData }) {
+    const { threadID, senderID, body } = event;
+    const data = JSON.parse(fs.readFileSync(path));
+    const input = args[0];
 
-function calcPoint(cards) {
-  const rankValue = r => {
-    if (r === 'A') return 1;
-    if (['J', 'Q', 'K'].includes(r)) return 0;
-    return parseInt(r);
-  };
-  const total = cards.reduce((sum, c) => sum + rankValue(c.slice(0, -1)), 0);
-  return total % 10;
-}
+    if (input === "create") {
+      if (data[threadID]?.status === "pending") return message.reply("Đã có bàn đang hoạt động.");
+      data[threadID] = {
+        owner: senderID,
+        players: [],
+        status: "pending",
+        time: Date.now(),
+        history: data[threadID]?.history || []
+      };
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      message.reply("Bàn Tài Xỉu đã được tạo. Dùng /taixiu join tài|xỉu <tiền> để tham gia.");
 
-module.exports.config = {
-  name: "bacao",
-  version: "1.0",
-  hasPermssion: 0,
-  credits: "Dat Thanh",
-  description: "Chơi bài 3 cào ăn tiền",
-  commandCategory: "game",
-  usages: "[create | join <tiền> | chia | list]",
-  cooldowns: 3
+      setTimeout(() => {
+        const updated = JSON.parse(fs.readFileSync(path));
+        if (updated[threadID]?.status === "pending") runRoll(threadID, message);
+      }, 60000);
+    }
+
+    else if (input === "join") {
+      if (!data[threadID] || data[threadID].status !== "pending")
+        return message.reply("Không có bàn nào đang hoạt động.");
+      const choice = args[1]?.toLowerCase();
+      const bet = parseInt(args[2]);
+      if (!["tài", "xỉu"].includes(choice)) return message.reply("Vui lòng chọn tài hoặc xỉu.");
+      if (isNaN(bet) || bet <= 0) return message.reply("Tiền cược không hợp lệ.");
+
+      const user = data[threadID].players.find(p => p.uid === senderID);
+      if (user) return message.reply("Bạn đã tham gia rồi.");
+      data[threadID].players.push({ uid: senderID, choice, bet });
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      message.reply(`Bạn đã cược ${bet} vào "${choice.toUpperCase()}".`);
+    }
+
+    else if (input === "xổ") {
+      if (!data[threadID] || data[threadID].status !== "pending")
+        return message.reply("Không có bàn đang hoạt động.");
+      if (data[threadID].owner !== senderID) return message.reply("Chỉ chủ bàn được xổ.");
+      runRoll(threadID, message);
+    }
+
+    else if (input === "list") {
+      const history = data[threadID]?.history || [];
+      if (!history.length) return message.reply("Chưa có ván nào.");
+      let reply = "Lịch sử bàn Tài Xỉu:\n";
+      history.slice(-10).reverse().forEach((g, i) => {
+        reply += `${i + 1}. ${g.total} điểm (${g.result.toUpperCase()}) - ${new Date(g.time).toLocaleString()}\n`;
+      });
+      message.reply(reply);
+    }
+
+    else message.reply("Sai cú pháp. Dùng /taixiu create, /taixiu join tài|xỉu <tiền>, /taixiu xổ, /taixiu list.");
+  }
 };
 
-module.exports.run = async function({ api, event, args, Users }) {
-  const { threadID, senderID } = event;
-  const [cmd, ...rest] = args;
+function runRoll(threadID, message) {
+  const data = JSON.parse(fs.readFileSync(path));
+  if (!data[threadID]) return;
 
-  if (cmd === "create") {
-    if (gameData[threadID]?.inGame)
-      return api.sendMessage("Đã có bàn đang hoạt động.", threadID);
-    const name = await Users.getNameUser(senderID);
-    gameData[threadID] = {
-      host: senderID,
-      players: { [senderID]: { name } },
-      inGame: true,
-      history: gameData[threadID]?.history || []
-    };
-    save();
-    return api.sendMessage(`${name} đã tạo bàn 3 cào. Dùng /bacao join <tiền> để tham gia.`, threadID);
-  }
+  const dice = [rand(1,6), rand(1,6), rand(1,6)];
+  const total = dice.reduce((a, b) => a + b, 0);
+  const result = total >= 11 ? "tài" : "xỉu";
 
-  if (cmd === "join") {
-    if (!gameData[threadID]?.inGame)
-      return api.sendMessage("Chưa có bàn nào đang mở!", threadID);
+  const players = data[threadID].players;
+  let reply = `Kết quả: [ ${dice.join(" | ")} ] = ${total} điểm → ${result.toUpperCase()}\n`;
+  players.forEach(p => {
+    reply += `• ${p.uid}: ${p.choice.toUpperCase()} - `;
+    reply += p.choice === result ? `Thắng +${p.bet}\n` : `Thua -${p.bet}\n`;
+  });
 
-    const bet = parseInt(rest[0]);
-    if (isNaN(bet) || bet <= 0) return api.sendMessage("Số tiền không hợp lệ.", threadID);
-    const userMoney = await Users.getMoney(senderID);
-    if (bet > userMoney) return api.sendMessage("Bạn không đủ tiền!", threadID);
+  data[threadID].history = data[threadID].history || [];
+  data[threadID].history.push({ total, result, time: Date.now() });
+  delete data[threadID];
+  fs.writeFileSync(path, JSON.stringify(data, null, 2));
 
-    const name = await Users.getNameUser(senderID);
-    await Users.decreaseMoney(senderID, bet);
-    gameData[threadID].players[senderID] = { name, bet };
-    save();
+  message.send(reply);
+}
 
-    api.sendMessage(`${name} đã vào bàn với cược ${bet}$`, threadID);
-
-    if (Object.keys(gameData[threadID].players).length >= 2 && !autoDeal[threadID]) {
-      autoDeal[threadID] = setTimeout(() => chiaBai(threadID, api, Users), 30000);
-      api.sendMessage("Tự động chia bài sau 30 giây...", threadID);
-    }
-    return;
-  }
-
-  if (cmd === "chia") {
-    if (!gameData[threadID]?.inGame) return api.sendMessage("Không có bàn nào!", threadID);
-    if (gameData[threadID].host !== senderID)
-      return api.sendMessage("Chỉ chủ bàn mới được chia!", threadID);
-
-    if (autoDeal[threadID]) clearTimeout(autoDeal[threadID]);
-    return chiaBai(threadID, api, Users);
-  }
-
-  if (cmd === "list") {
-    const history = gameData[threadID]?.history || [];
-    if (!history.length) return api.sendMessage("Chưa có ván nào.", threadID);
-    const text = history.slice(-5).reverse().map((v, i) => `${i + 1}. ${v}`).join("\n");
-    return api.sendMessage("Lịch sử ván gần đây:\n" + text, threadID);
-  }
-
-  return api.sendMessage("Sai cú pháp. Dùng: /bacao create | join <tiền> | chia | list", threadID);
-};
-
-async function chiaBai(threadID, api, Users) {
-  const data = gameData[threadID];
-  if (!data?.inGame) return;
-  const deck = getCard();
-  const results = [];
-
-  let msg = "🎴 Kết quả 3 Cào:\n";
-  const playerCards = {};
-
-  for (const uid of Object.keys(data.players)) {
-    const cards = [deck.pop(), deck.pop(), deck.pop()];
-    const point = calcPoint(cards);
-    playerCards[uid] = { cards, point };
-    msg += `\n${data.players[uid].name}: ${cards.join(", ")} = ${point} điểm`;
-  }
-
-  const maxPoint = Math.max(...Object.values(playerCards).map(p => p.point));
-  const winners = Object.entries(playerCards).filter(([_, p]) => p.point === maxPoint).map(([uid]) => uid);
-
-  msg += `\n\n🏆 Người thắng: ${winners.map(id => data.players[id].name).join(", ")}`;
-
-  for (const [uid, info] of Object.entries(data.players)) {
-    if (winners.includes(uid)) {
-      const winAmount = info.bet * (Object.keys(data.players).length - winners.length);
-      await Users.increaseMoney(uid, info.bet + winAmount);
-    }
-  }
-
-  data.history.push(msg);
-  data.players = {};
-  data.inGame = false;
-  save();
-  if (autoDeal[threadID]) {
-    clearTimeout(autoDeal[threadID]);
-    delete autoDeal[threadID];
-  }
-
-  return api.sendMessage(msg, threadID);
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
