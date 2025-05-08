@@ -4,7 +4,7 @@ module.exports.config = { name: "xidach", version: "1.0.2", hasPermssion: 0, cre
 
 const games = {};
 
-function createDeck() { const suits = ['♠️', '♥️', '♦️', '♣️']; const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']; let deck = []; for (const suit of suits) { for (const rank of ranks) { deck.push(${rank}${suit}); } } return deck.sort(() => Math.random() - 0.5); }
+function createDeck() { const suits = ['♠️', '♥️', '♦️', '♣️']; const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']; let deck = []; for (const suit of suits) { for (const rank of ranks) { deck.push(`${rank}${suit}`); } } return deck.sort(() => Math.random() - 0.5); }
 
 function calculatePoints(hand) { let points = 0, aces = 0; for (const card of hand) { const rank = card.slice(0, -1); if (['J', 'Q', 'K'].includes(rank)) points += 10; else if (rank === 'A') { points += 11; aces += 1; } else points += parseInt(rank); } while (points > 21 && aces > 0) { points -= 10; aces--; } return points; }
 
