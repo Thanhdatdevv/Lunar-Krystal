@@ -1,40 +1,132 @@
-// File: xidach.js
+const fs = require("fs");
+const path = __dirname + "/cache/xidach.json";
+if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({}));
 
-const fs = require("fs-extra"); const path = __dirname + "/../cache/xidach.json"; const historyPath = __dirname + "/../history/xidach.json";
+const allCards = () => {
+  const ranks = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"];
+  const suits = ["♠", "♥", "♦", "♣"];
+  return suits.flatMap(suit => ranks.map(rank => `${rank}${suit}`));
+};
 
-module.exports.config = { name: "xidach", version: "1.0.0", hasPermssion: 0, credits: "GPT-4", description: "Chơi xì dách (Blackjack Việt Nam)", commandCategory: "game", usages: "/xidach [create|join|start|rut|dung|list]", cooldowns: 3 };
+const getPoint = card => {
+  const rank = card.replace(/[♠♥♦♣]/g, "");
+  if (["J", "Q", "K"].includes(rank)) return 10;
+  if (rank === "A") return 1;
+  return parseInt(rank);
+};
 
-let data = fs.existsSync(path) ? require(path) : {};
+function drawCard(deck) {
+  const index = Math.floor(Math.random() * deck.length);
+  const card = deck[index];
+  deck.splice(index, 1);
+  return card;
+}
 
-function save() { fs.writeFileSync(path, JSON.stringify(data, null, 2)); }
+module.exports = {
+  config: {
+    name: "xidach",
+    version: "1.0",
+    author: "dat Thanh",
+    role: 0,
+    shortDescription: "Chơi xì dách nhiều người",
+    longDescription: "Tạo bàn, tham gia, rút bài và so điểm trong Xì Dách",
+    category: "game",
+    guide: {
+      vi: "/xidach create\n/xidach join\n/xidach rut\n/xidach dung\n/xidach xổ\n/xidach info"
+    }
+  },
 
-function drawCard() { const suits = ['♠', '♥', '♦', '♣']; const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']; const card = ranks[Math.floor(Math.random() * ranks.length)] + suits[Math.floor(Math.random() * suits.length)]; return card; }
+  onStart({ event, args, message }) {
+    const { threadID, senderID } = event;
+    const data = JSON.parse(fs.readFileSync(path));
+    const cmd = args[0];
 
-function calcPoints(cards) { let total = 0, aces = 0; for (let card of cards) { let value = card.match(/\d+/) ? parseInt(card) : card[0]; if (value === 'A') { aces++; total += 11; } else if (['J', 'Q', 'K'].includes(value)) { total += 10; } else { total += value; } } while (total > 21 && aces > 0) { total -= 10; aces--; } return total; }
+    if (cmd === "create") {
+      if (data[threadID]) return message.reply("Đã có bàn đang hoạt động.");
+      const deck = allCards();
+      const firstCard = drawCard(deck);
+      data[threadID] = {
+        owner: senderID,
+        deck,
+        players: {
+          [senderID]: {
+            cards: [firstCard],
+            status: "playing"
+          }
+        },
+        started: true
+      };
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      return message.reply(`Đã tạo bàn Xì Dách. Dùng /xidach join để vào chơi.`);
+    }
 
-module.exports.run = async function({ api, event, args, Users, Currencies }) { const { threadID, senderID, messageID } = event; const send = msg => api.sendMessage(msg, threadID, messageID); const action = args[0];
+    if (cmd === "join") {
+      if (!data[threadID]) return message.reply("Chưa có bàn nào đang hoạt động.");
+      const game = data[threadID];
+      if (game.players[senderID]) return message.reply("Bạn đã tham gia rồi.");
 
-if (!data[threadID]) data[threadID] = null;
+      const card = drawCard(game.deck);
+      game.players[senderID] = { cards: [card], status: "playing" };
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      return message.reply(`Bạn đã tham gia và được rút 1 lá bài.`);
+    }
 
-if (action === "create") { if (data[threadID]) return send("Đã có bàn đang hoạt động."); data[threadID] = { host: senderID, players: {}, started: false, turn: null }; save(); return send("Đã tạo bàn xì dách. Dùng /xidach join <tiền cược> để tham gia."); }
+    if (cmd === "rut") {
+      const game = data[threadID];
+      if (!game || !game.players[senderID]) return message.reply("Bạn chưa tham gia bàn nào.");
 
-if (action === "join") { if (!data[threadID] || data[threadID].started) return send("Không có bàn đang mở hoặc đã bắt đầu."); const bet = parseInt(args[1]); if (isNaN(bet) || bet <= 0) return send("Vui lòng nhập số tiền cược hợp lệ."); const money = (await Currencies.getData(senderID)).money; if (money < bet) return send("Bạn không đủ tiền."); data[threadID].players[senderID] = { bet, cards: [], done: false, bust: false }; save(); return send(Đã tham gia bàn với ${bet}$. Dùng /xidach start khi sẵn sàng (chỉ chủ bàn).); }
+      const player = game.players[senderID];
+      if (player.status === "done") return message.reply("Bạn đã dừng.");
+      if (player.cards.length >= 5) return message.reply("Bạn đã rút tối đa 5 lá.");
 
-if (action === "start") { const room = data[threadID]; if (!room || room.started) return send("Chưa có bàn hoặc đã bắt đầu."); if (room.host !== senderID) return send("Chỉ chủ bàn mới có thể bắt đầu."); if (Object.keys(room.players).length < 1) return send("Cần ít nhất 1 người chơi."); for (let uid in room.players) { room.players[uid].cards = [drawCard(), drawCard()]; room.players[uid].done = false; room.players[uid].bust = false; } room.started = true; room.turn = Object.keys(room.players)[0]; save(); api.sendMessage("Bắt đầu chia bài! Người đầu tiên: " + room.turn, threadID); return; }
+      const card = drawCard(game.deck);
+      player.cards.push(card);
+      const total = player.cards.reduce((sum, c) => sum + getPoint(c), 0);
+      let reply = `Bạn rút thêm: ${card} (Tổng: ${total} điểm)`;
+      if (total > 21) {
+        player.status = "done";
+        reply += "\nBạn đã QUÁ 21 điểm!";
+      }
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      return message.reply(reply);
+    }
 
-if (action === "rut") { const room = data[threadID]; if (!room || !room.started) return send("Chưa bắt đầu ván chơi."); if (room.turn !== senderID) return send("Không đến lượt bạn."); const player = room.players[senderID]; if (player.done || player.bust) return send("Bạn đã kết thúc lượt."); const newCard = drawCard(); player.cards.push(newCard); const point = calcPoints(player.cards); if (point > 21) { player.bust = true; player.done = true; send(Bạn rút ${newCard} => Quắc (${point} điểm)); } else { send(Bạn rút ${newCard} => hiện tại ${point} điểm); } nextTurn(threadID); save(); return; }
+    if (cmd === "dung") {
+      const game = data[threadID];
+      if (!game || !game.players[senderID]) return message.reply("Bạn chưa tham gia bàn.");
+      game.players[senderID].status = "done";
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      return message.reply("Bạn đã dừng. Chờ chủ bàn xổ.");
+    }
 
-if (action === "dung") { const room = data[threadID]; if (!room || !room.started) return send("Chưa bắt đầu ván chơi."); if (room.turn !== senderID) return send("Không đến lượt bạn."); room.players[senderID].done = true; send("Bạn đã dừng. Chờ người chơi tiếp theo."); nextTurn(threadID); save(); return; }
+    if (cmd === "info") {
+      const game = data[threadID];
+      if (!game) return message.reply("Không có bàn nào hoạt động.");
+      const list = Object.entries(game.players).map(([uid, p]) => {
+        const cards = p.cards.join(", ");
+        const total = p.cards.reduce((s, c) => s + getPoint(c), 0);
+        return `• ${uid === game.owner ? "[CHỦ]" : ""} ${uid}: ${cards} (${total} điểm)`;
+      }).join("\n");
+      return message.reply("Trạng thái bàn hiện tại:\n" + list);
+    }
 
-if (action === "list") { if (!fs.existsSync(historyPath)) return send("Chưa có ván nào được ghi nhận."); const history = require(historyPath); const list = history[threadID] || []; if (!list.length) return send("Chưa có ván nào ở nhóm này."); return send("Lịch sử xì dách: " + list.map((r, i) => Ván ${i + 1}: ${r}).join("\n")); } };
+    if (cmd === "xổ") {
+      const game = data[threadID];
+      if (!game) return message.reply("Không có bàn nào.");
+      if (game.owner !== senderID) return message.reply("Chỉ chủ bàn được xổ.");
 
-function nextTurn(threadID) { const room = data[threadID]; const ids = Object.keys(room.players); const currentIndex = ids.indexOf(room.turn); for (let i = currentIndex + 1; i < ids.length; i++) { const p = room.players[ids[i]]; if (!p.done && !p.bust) { room.turn = ids[i]; return; } } // Tất cả đã xong endGame(threadID); }
+      const results = Object.entries(game.players).map(([uid, p]) => {
+        const cards = p.cards.join(", ");
+        const total = p.cards.reduce((s, c) => s + getPoint(c), 0);
+        let status = total > 21 ? "Quá điểm" : `${total} điểm`;
+        return `• ${uid === game.owner ? "[CHỦ]" : ""} ${uid}: ${cards} → ${status}`;
+      }).join("\n");
 
-async function endGame(threadID) { const room = data[threadID]; const results = []; let maxPoint = 0; for (let uid in room.players) { const p = room.players[uid]; const pt = calcPoints(p.cards); if (!p.bust && pt > maxPoint) maxPoint = pt; }
+      delete data[threadID];
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      return message.reply("KẾT QUẢ BÀN XÌ DÁCH:\n" + results);
+    }
 
-for (let uid in room.players) { const p = room.players[uid]; const pt = calcPoints(p.cards); const result = ${uid}: ${p.cards.join(', ')} => ${pt} điểm ${p.bust ? "(quắc)" : ""}; results.push(result); if (!p.bust && pt === maxPoint) { await global.module.exports.Currencies.increaseMoney(uid, p.bet); } else { await global.module.exports.Currencies.decreaseMoney(uid, p.bet); } }
-
-if (!fs.existsSync(historyPath)) fs.writeFileSync(historyPath, JSON.stringify({})); const history = require(historyPath); if (!history[threadID]) history[threadID] = []; history[threadID].push(results.join(" | ")); fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
-
-global.api.sendMessage("Kết quả ván xì dách: " + results.join("\n"), threadID); delete data[threadID]; save(); }
-
+    return message.reply("Sai cú pháp. Dùng: /xidach create | join | rut | dung | xổ | info");
+  }
+};
