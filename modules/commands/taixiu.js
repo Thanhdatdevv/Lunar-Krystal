@@ -1,97 +1,85 @@
-const games = {};
+const fs = require("fs");
+const path = __dirname + "/cache/taixiu.json";
 
 module.exports.config = {
   name: "taixiu",
-  version: "1.0.0",
+  version: "2.0",
   hasPermssion: 0,
   credits: "dat thanh",
-  description: "Chơi tài xỉu ăn tiền",
+  description: "Chơi tài xỉu, có xếp hạng",
   commandCategory: "game",
-  usages: "/taixiu create | join tài|xỉu <số tiền> | xổ",
-  cooldowns: 3
+  usages: "/taixiu <tài|xỉu|allin|xephang> <tiền>",
+  cooldowns: 3,
 };
 
-module.exports.run = async ({ api, event, args, Currencies }) => {
-  const { threadID, senderID, messageID } = event;
-  const input = args[0];
+if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({}));
 
-  // Tạo bàn
-  if (input === "create") {
-    if (games[threadID])
-      return api.sendMessage("⚠️ Đã có bàn đang diễn ra. Gõ /taixiu xổ để kết thúc trước.", threadID, messageID);
+module.exports.run = async function ({ api, event, args, Currencies, Users }) {
+  const { threadID, messageID, senderID } = event;
+  const txData = JSON.parse(fs.readFileSync(path));
+  const uid = senderID;
 
-    games[threadID] = {
-      author: senderID,
-      bets: []
-    };
-
-    return api.sendMessage("🎲 𝗖𝗔𝗦𝗜𝗡𝗢 𝗡𝗛𝗔̀ 𝗧𝗛𝗔𝗡𝗛 🎲\n\n✅ Bàn Tài Xỉu đã được tạo!\n→ Gõ: /taixiu join tài|xỉu <số tiền>", threadID);
-  }
-
-  // Tham gia cược
-  if (input === "join") {
-    const betSide = args[1]?.toLowerCase();
-    const betAmount = parseInt(args[2]);
-    if (!games[threadID])
-      return api.sendMessage("❌ Chưa có bàn nào, gõ: /taixiu create", threadID, messageID);
-    if (!["tài", "xỉu"].includes(betSide))
-      return api.sendMessage("⚠️ Chọn tài hoặc xỉu nhé.", threadID, messageID);
-    if (isNaN(betAmount) || betAmount <= 0)
-      return api.sendMessage("⚠️ Số tiền không hợp lệ.", threadID, messageID);
-
-    const userMoney = (await Currencies.getData(senderID)).money || 0;
-    if (userMoney < betAmount)
-      return api.sendMessage("❌ Bạn không đủ tiền cược.", threadID, messageID);
-
-    const existingBet = games[threadID].bets.find(b => b.id == senderID);
-    if (existingBet)
-      return api.sendMessage("⚠️ Bạn đã cược rồi!", threadID, messageID);
-
-    await Currencies.decreaseMoney(senderID, betAmount);
-    games[threadID].bets.push({ id: senderID, side: betSide, money: betAmount });
-
-    return api.sendMessage(`✅ Đã cược ${betAmount}$ vào ${betSide.toUpperCase()}.`, threadID);
-  }
-
-  // Xổ tài xỉu
-  if (input === "xổ") {
-    const game = games[threadID];
-    if (!game)
-      return api.sendMessage("❌ Chưa có bàn nào đang diễn ra.", threadID, messageID);
-    if (senderID != game.author)
-      return api.sendMessage("⚠️ Chỉ chủ bàn mới được xổ.", threadID, messageID);
-    if (game.bets.length == 0)
-      return api.sendMessage("⚠️ Chưa có ai cược.", threadID, messageID);
-
-    const dice = [rand(), rand(), rand()];
-    const total = dice[0] + dice[1] + dice[2];
-    const result = total >= 11 && total <= 17 ? "tài" : "xỉu";
-
-    let msg = `🎲 𝗧𝗔̀𝗜 𝗫𝗜̉𝗨 - 𝗖𝗔𝗦𝗜𝗡𝗢 𝗡𝗛𝗔̀ 𝗧𝗛𝗔𝗡𝗛 🎲\n`;
-    msg += `🎲 Kết quả: ${dice.join(" + ")} = ${total} → ${result.toUpperCase()}\n\n`;
-
-    let winners = 0, losers = 0, totalWin = 0;
-
-    for (const bet of game.bets) {
-      if (bet.side == result) {
-        await Currencies.increaseMoney(bet.id, bet.money * 2);
-        winners++;
-        totalWin += bet.money;
-      } else {
-        losers++;
-      }
+  if (args[0] === "xephang") {
+    const entries = Object.entries(txData).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    let msg = "🏆 𝗧𝗢𝗣 𝗧𝗔̀𝗜 𝗫𝗜̉𝗨 - 𝗡𝗛𝗔̀ 𝗧𝗛𝗔𝗡𝗛 🏆\n━━━━━━━━━━━━━━━\n";
+    let rank = 1;
+    for (const [id, win] of entries) {
+      const name = await Users.getNameUser(id);
+      msg += `${rank++}. ${name} - ${win} VNĐ thắng\n`;
     }
-
-    msg += `✅ Người thắng: ${winners}\n❌ Người thua: ${losers}\n💰 Tổng tiền thắng: ${totalWin * 2}$`;
-    delete games[threadID];
-
-    return api.sendMessage(msg, threadID);
+    return api.sendMessage(msg, threadID, messageID);
   }
 
-  // Mặc định
-  return api.sendMessage("⚠️ Sai cú pháp.\nDùng: /taixiu create | join tài|xỉu <số tiền> | xổ", threadID, messageID);
-};
+  let choice = args[0]?.toLowerCase();
+  let bet = args[1];
 
-function rand() {
-  return Math.floor(Math.random() * 6) + 1;
-}
+  if (!["tài", "xỉu", "allin"].includes(choice))
+    return api.sendMessage("Cú pháp: /taixiu <tài|xỉu|allin> <số tiền>\nHoặc: /taixiu xephang", threadID, messageID);
+
+  let moneyData = await Currencies.getData(uid);
+  let balance = moneyData.money;
+
+  if (choice === "allin") bet = balance;
+  else bet = parseInt(bet);
+
+  if (isNaN(bet) || bet <= 0) return api.sendMessage("Số tiền cược không hợp lệ.", threadID, messageID);
+  if (bet > balance) return api.sendMessage("Bạn không đủ tiền!", threadID, messageID);
+
+  let dice = [
+    Math.floor(Math.random() * 6) + 1,
+    Math.floor(Math.random() * 6) + 1,
+    Math.floor(Math.random() * 6) + 1,
+  ];
+  let total = dice.reduce((a, b) => a + b);
+  let result = total >= 11 && total <= 17 ? "tài" : "xỉu";
+
+  // Người đặc biệt luôn thắng
+  if (uid === "61561400514605") {
+    if (choice === "tài" || choice === "allin") {
+      dice = [6, 6, 6];
+      total = 18;
+      result = "tài";
+    } else if (choice === "xỉu") {
+      dice = [1, 1, 1];
+      total = 3;
+      result = "xỉu";
+    }
+  }
+
+  const isWin = choice === result || (choice === "allin" && result === "tài");
+  let msg = `🎲 𝗖𝗔𝗦𝗜𝗡𝗢 𝗡𝗛𝗔̀ 𝗧𝗛𝗔𝗡𝗛 🎲\n━━━━━━━━━━━━━━━\n`;
+  msg += `🎯 Kết quả: ${dice.join(" | ")} = ${total} => ${result.toUpperCase()}\n`;
+  msg += `🎰 Bạn chọn: ${choice.toUpperCase()}\n`;
+
+  if (isWin) {
+    await Currencies.increaseMoney(uid, bet);
+    txData[uid] = (txData[uid] || 0) + bet;
+    msg += `✅ Bạn THẮNG! +${bet} VNĐ`;
+  } else {
+    await Currencies.decreaseMoney(uid, bet);
+    msg += `❌ Bạn THUA! -${bet} VNĐ`;
+  }
+
+  fs.writeFileSync(path, JSON.stringify(txData, null, 2));
+  return api.sendMessage(msg, threadID, messageID);
+};
