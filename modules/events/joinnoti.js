@@ -37,7 +37,7 @@ module.exports.run = async function({ api, event, Users  , Threads}) {
 	if (event.logMessageData.addedParticipants.some(i => i.userFbId == api.getCurrentUserID())) {
 		api.changeNickname(`[ ${global.config.PREFIX} ] • ${(!global.config.BOTNAME) ? "Made by Khôi" : global.config.BOTNAME}`, threadID, api.getCurrentUserID());
 		const fs = require("fs");
-    var mlg="Kết nối thành công\nĐã load toàn bộ lệnh và người dùng trong nhóm.\n❌ Nếu nhóm của bạn chưa kích hoạt sử dụng bot, vui lòng sử dụng lệnh 'callad' để liên hệ Admin.\n─────────────────\n🌐 Facebook: https://www.facebook.com/61561400514605"
+    var mlg="𝐂𝐇𝐀̀𝐎 𝐂𝐀́𝐂 𝐁𝐀̣𝐍\n🌹 𝐌𝐢̀𝐧𝐡 𝐥𝐚̀ 𝐔𝐌𝐈-𝐂𝐇𝐀𝐍\𝐧 𝟏 𝐒𝐎̂́ 𝐋𝐄̣̂𝐍𝐇 Đ𝐄̂̉ 𝐋𝐀̀𝐌 𝐐𝐔𝐄𝐍 𝐕𝐎̛́𝐈 𝐌𝐈̀𝐍𝐇\𝐍   /𝐌𝐄𝐍𝐔 𝐀𝐋𝐋 \𝐍   /𝐒𝐏𝐓 \𝐍  𝐇𝐎̣𝐀̆𝐂 𝐊𝐄̂𝐔 𝐕𝐘 𝐎̛𝐈 𝐓𝐎̛́ 𝐒𝐄̃ 𝐇𝐎̂̃ 𝐓𝐑𝐎̛̣ 𝐁𝐀̣𝐍\𝐍──────────────\n🌐 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤: https://www.facebook.com/61561400514605"
     	return api.sendMessage(threadID,async () => {
 await api.shareContact(`${mlg}`,61561400514605, threadID);
 });
