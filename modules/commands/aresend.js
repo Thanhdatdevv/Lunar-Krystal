@@ -1,59 +1,105 @@
-const axios = require('axios');
-
-let messageStorage = new Map();
-
 module.exports.config = {
-  name: "resend",
-  version: "1.0.1",
-  hasPermission: 0,
-  credits: "GPT Dev",
-  description: "Gửi lại ảnh/video/file nếu thành viên thu hồi",
-  commandCategory: "Nhóm",
-  usages: "",
-  cooldowns: 5,
-};
-
-module.exports.handleEvent = async function ({ event, api }) {
-  const { threadID, messageID, type, senderID } = event;
-
-  // Ghi nhớ tin nhắn nếu có đính kèm
-  if (event.attachments?.length > 0) {
-    messageStorage.set(messageID, {
-      senderID,
-      attachments: event.attachments,
-      body: event.body || '',
-    });
-
-    // Tự xoá sau 5 phút
-    setTimeout(() => messageStorage.delete(messageID), 5 * 60 * 1000);
+    name: 'resend',
+    version: '2.0.0',
+    hasPermssion: 1,
+    credits: 'Thọ, ManhG Fix Ver > 1.2.13',
+    description: 'Xem lại tin nhắn bị gỡ',
+    commandCategory: 'Tiện ích',
+    usages: '',
+    cooldowns: 0,
+    hide: true,
+    dependencies: {
+      request: '',
+      'fs-extra': '',
+      axios: '',
+    },
   }
-
-  // Nếu có unsend
-  if (type === "message_unsend") {
-    const cached = messageStorage.get(messageID);
-    if (!cached) return;
-
-    const userName = await api.getUserInfo(cached.senderID)
-      .then(res => res[cached.senderID]?.name || "Không rõ");
-
-    const msg = {
-      body: `━━━━━━━━━━━━━━━\n𝗕𝗔̣𝗡 𝗧𝗨̛𝗢̛̉𝗡𝗚 𝗫𝗢𝗔́ 𝗟𝗔̀ 𝗧𝗛𝗢𝗔́𝗧 𝗔̀ 👀\n━━━━━━━━━━━━━━━\n👤 𝗧𝗲̂𝗻: ${userName}\n🆔 𝗨𝗜𝗗: ${cached.senderID}\n💬 𝗡𝗼̣̂𝗶 𝗗𝘂𝗻𝗴: ${cached.body || "[Không có nội dung]"}`
-    };
-
-    // Gửi lại file đính kèm (nếu có)
-    if (cached.attachments.length > 0) {
-      msg.attachment = [];
-
-      for (const item of cached.attachments) {
-        try {
-          const res = await axios.get(item.url, { responseType: 'stream' });
-          msg.attachment.push(res.data);
-        } catch (err) {
-          console.log("Lỗi tải lại file:", err.message);
+  module.exports.handleEvent = async function ({
+    event: e,
+    api: a,
+    client: t,
+    Users: s,
+  }) {
+    const n = global.nodemodule.request,
+      o = global.nodemodule.axios,
+      { writeFileSync: d, createReadStream: r } = global.nodemodule['fs-extra']
+    let { messageID: g, senderID: l, threadID: i, body: u } = e
+    global.logMessage || (global.logMessage = new Map())
+    global.data.botID || (global.data.botID = global.data.botID)
+    const c = global.data.threadData.get(i) || {}
+    if (
+      (void 0 === c.resend || 1 != c.resend) &&
+      l != global.data.botID &&
+      ('message_unsend' != e.type &&
+        global.logMessage.set(g, {
+          msgBody: u,
+          attachment: e.attachments,
+        }),
+      void 0 !== c.resend && (1 == c.resend) | ('message_unsend' == e.type))
+    ) {
+      var m = global.logMessage.get(g)
+      if (!m) {
+        return
+      }
+      let e = await s.getNameUser(l)
+      if (null == m.attachment[0]) {
+        return a.sendMessage(`${e} đã gỡ 1 tin nhắn\nNội dung: ${m.msgBody}`, i)
+      }
+      {
+        let t = 0,
+          s = {
+            body: `${e} vừa gỡ ${m.attachment.length} tệp đính kèm.${
+              '' != m.msgBody ? `\n\nNội dung: ${m.msgBody}` : ''
+            }`,
+            attachment: [],
+            mentions: {
+              tag: e,
+              id: l,
+            },
+          }
+        for (var h of m.attachment) {
+          t += 1
+          var f = (await n.get(h.url)).uri.pathname,
+            b = f.substring(f.lastIndexOf('.') + 1),
+            p = __dirname + `/cache/${t}.${b}`,
+            x = (await o.get(h.url, { responseType: 'arraybuffer' })).data
+          d(p, Buffer.from(x, 'utf-8'))
+          s.attachment.push(r(p))
         }
+        a.sendMessage(s, i)
       }
     }
-
-    return api.sendMessage(msg, threadID);
   }
-};
+  module.exports.languages = {
+    vi: {
+      on: 'Bật',
+      off: 'Tắt',
+      successText: 'resend thành công',
+    },
+    en: {
+      on: 'on',
+      off: 'off',
+      successText: 'resend success!',
+    },
+  }
+  module.exports.run = async function ({
+    api: e,
+    event: a,
+    Threads: t,
+    getText: s,
+  }) {
+    const { threadID: n, messageID: o } = a
+    let d = (await t.getData(n)).data
+    return (
+      void 0 === d.resend || 0 == d.resend
+        ? (d.resend = true)
+        : (d.resend = false),
+      await t.setData(n, { data: d }),
+      global.data.threadData.set(n, d),
+      e.sendMessage(
+        `${1 == d.resend ? s('off') : s('on')} ${s('successText')}`,
+        n,
+        o
+      )
+    )
+  }
