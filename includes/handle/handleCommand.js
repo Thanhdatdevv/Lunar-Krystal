@@ -32,20 +32,20 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
     let usages = JSON.parse(fs.readFileSync(usgPath));
 
     if (!global.data.allThreadID.includes(threadID) && !ADMINBOT.includes(senderID) && adminbot.adminPaseOnly == true) {
-      return api.sendMessage("Admin bot mới dùng bot trong đoạn chat riêng!!", threadID, messageID);
+      return api.sendMessage("💢🎃Admin bot mới dùng bot trong đoạn chat riêng!!", threadID, messageID);
     }
     if (!ADMINBOT.includes(senderID) && adminbot.adminOnly == true) {
-      return api.sendMessage('Admin bot mới sử dụng được!!', threadID, messageID);
+      return api.sendMessage('💢🎃𝐀𝐃𝐌𝐈𝐍 𝐌𝐎̛́𝐈 𝐒𝐔̛̉ 𝐃𝐔̣𝐍𝐆 Đ𝐔𝐎̛̣𝐂!!', threadID, messageID);
     }
     if (!NDH.includes(senderID) && !ADMINBOT.includes(senderID) && adminbot.ndhOnly == true) {
-      return api.sendMessage('NDH mới có thể sử dụng bot', threadID, messageID);
+      return api.sendMessage('💢🎃𝐍𝐃𝐇 𝐌𝐎̛́𝐈 𝐂𝐎́ 𝐓𝐇𝐄̂̉ 𝐒𝐔̛̉ 𝐃𝐔̣𝐍𝐆 𝐁𝐎𝐓', threadID, messageID);
     }
 
     const dataAdbox = require('../../modules/commands/cache/data.json');
     var threadInf = (threadInfo.get(threadID) || await Threads.getInfo(threadID));
     const findd = threadInf.adminIDs.find(el => el.id == senderID);
     if (dataAdbox.adminbox.hasOwnProperty(threadID) && dataAdbox.adminbox[threadID] == true && !ADMINBOT.includes(senderID) && !findd && event.isGroup == true && !NDH.includes(senderID) && !findd && event.isGroup == true) {
-      return api.sendMessage('Quản trị viên mới sử dụng được!!', event.threadID, event.messageID);
+      return api.sendMessage('💢🎃𝐐𝐔𝐀̉𝐍 𝐓𝐑𝐈̣ 𝐕𝐈𝐄̂𝐍 𝐌𝐎̛́𝐈 𝐒𝐔̛̉ 𝐃𝐔̣𝐍𝐆 Đ𝐔𝐎̛̣𝐂 !!', event.threadID, event.messageID);
     }
 
     if (userBanned.has(senderID) || threadBanned.has(threadID) || allowInbox == ![] && senderID == threadID) {
@@ -82,7 +82,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
       const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
       var gio = moment.tz("Asia/Ho_Chi_Minh").format("D/MM/YYYY || HH:mm:ss");
       if (checker.bestMatch.rating >= 0.5) command = global.client.commands.get(checker.bestMatch.target);
-      else return api.sendMessage({body:`==[ ${global.config.BOTNAME} ]==\n❎ Lệnh không tồn tại !\n✅ Lệnh gần giống là: ${checker.bestMatch.target}\n─────────────────\n🎶 Thời gian hoạt động: ${hours}:${minutes}:${seconds}\n⏰ Time: ${gio}`, attachment: global.krystal.splice(0, 1)}, threadID, messageID);
+      else return api.sendMessage({body:`==[🎃💢${global.config.BOTNAME}]\n 𝐂𝐇𝐀̀𝐎 𝐁𝐀̣𝐍 ${name}, Đ𝐚̃ 𝐝𝐮̀𝐧𝐠 𝐬𝐚𝐢 𝐥𝐞̣̂𝐧𝐡❌✅🎃 𝐋𝐄̣̂𝐍𝐇 𝐆𝐀̂̀̂̀𝐍 Đ𝐔́𝐍𝐆 𝐋𝐀̀: ${checker.bestMatch.target}\n─────────────────\𝐧 𝐓𝐡𝐨̛̀𝐢 𝐆𝐢𝐚𝐧 𝐧𝐚̃𝐲 𝐠𝐢𝐨̛̀ 𝐛𝐨𝐭 𝐨𝐧𝐥 𝐥𝐚̀:${hours}:${minutes}:${seconds}\n⏰ 𝐓𝐈𝐌𝐄: ${gio}`, attachment: global.krystal.splice(0, 1)}, threadID, messageID);
     }
 
     if (commandBanned.get(threadID) || commandBanned.get(senderID)) {
@@ -136,7 +136,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
     const timestamps = client.cooldowns.get(command.config.name);
     const expirationTime = (command.config.cooldowns || 1) * 1000;
     if (timestamps.has(senderID) && dateNow < timestamps.get(senderID) + expirationTime)
-      return api.sendMessage(`⏱ Bạn đang trong thời gian chờ!\n Vui lòng thử lại sau ${((timestamps.get(senderID) + expirationTime - dateNow)/1000).toString().slice(0, 5)}s nữa nhé!!!`, threadID, messageID);
+      return api.sendMessage(`⏱ 𝐁𝐀̣𝐍 Đ𝐀𝐍𝐆 𝐒𝐏𝐀𝐌 𝐋𝐄̣̂𝐍𝐇 𝐇𝐀̃𝐘 Đ𝐎̛̣𝐈\n 𝐒𝐔̛̉ 𝐃𝐔̣𝐍𝐆 𝐒𝐀𝐔${((timestamps.get(senderID) + expirationTime - dateNow)/1000).toString().slice(0, 5)}𝐒 𝐍𝐔̛̃𝐀 Đ𝐄̂̉ 𝐓𝐑𝐀́𝐍𝐇 𝐒𝐏𝐀𝐌 𝐍𝐄̀ 🌹!!!`, threadID, messageID);
 
     var getText2;
     if (command.languages && typeof command.languages == 'object' && command.languages.hasOwnProperty(global.config.language))
