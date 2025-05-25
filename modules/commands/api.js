@@ -1,186 +1,225 @@
-const folder = process.cwd() + "/includes/datajson/";
-const fse = require("fs-extra");
-const { unlinkSync, renameSync, writeFileSync, readdirSync, readFileSync, statSync } = require("fs");
-const { downloadFile } = require("../../utils/index");
-exports.config = {
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
+
+module.exports.config = {
   name: "api",
-  version: "0.0.9",
-  hasPermssion: 0,
-  credits: "Harin",
-  description: "Up link lên data API",
+  version: "2.1.9",
+  hasPermssion: 3,
+  credits: "DongDev",
+  description: "Tải link/quản lý link ảnh/video/nhạc ở kho lưu trữ link",
   commandCategory: "Admin",
-  usages: "[ text ] + [ namefile ] + [ reply link or image/video ]",
+  usages: "[]",
   cooldowns: 5,
-  usePrefix: false,
-  dependencies: ""
+  images: [],
 };
-exports.run = async function (_){
-const { threadID: t, messageReply: mRl, messageID: m, senderID: s } = _.event;
-const send = (msg, callback) => _.api.sendMessage(msg, t, callback, m)
-const permission = global.config.NDH[0];
-if (!permission.includes(s)) return send("Cút!")
-if (!fse.existsSync(folder)) {
-fse.mkdirSync(folder, { recursive: true });
+
+module.exports.run = async ({ api, event, args }) => {
+  try {
+    const projectHome = path.resolve('./');
+    const srcapi = path.join(projectHome, 'img');
+    global.srcapi = srcapi;
+
+    switch (args[0]) {
+      case 'add': {
+        if (args.length === 1) {
+          api.sendMessage("⚠️ Vui lòng nhập tên tệp", event.threadID, event.messageID);
+          return;
+        }
+
+        const tip = args[1];
+        const dataPath = path.join(srcapi, `${tip}.json`);
+        if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, '[]', 'utf-8');
+        const data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+
+        for (const i of event.messageReply.attachments) {
+          const response = await axios.get(`https://catbox-mnib.onrender.com/upload?url=${encodeURIComponent(i.url)}`);
+          if (Array.isArray(response.data)) {
+            data.push(...response.data.map(linkObj => linkObj.url));
+          } else {
+            data.push(response.data.url);
+          }
+        }
+
+        fs.writeFileSync(dataPath, JSON.stringify(data, null, 2), 'utf-8');
+        api.sendMessage(`☑️ Tải link lên api thành công`, event.threadID, event.messageID);
+        break;
+      }
+
+      case 'check': {
+        const files = fs.readdirSync(srcapi);
+        let fileIndex = 1;
+        let totalLinks = 0;
+
+        const results = [];
+
+        for (const file of files) {
+          const filePath = path.join(srcapi, file);
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const linksArray = JSON.parse(fileContent);
+
+          totalLinks += linksArray.length;
+          results.push(`${fileIndex}. ${file} - tổng ${linksArray.length} link`);
+          fileIndex++;
+        }
+
+        const messageToSend = `🗂️ Tổng có ${files.length} file trong kho lưu trữ:\n──────────────────\n${results.join('\n')}\n\n──────────────────\n|› 📝 Tổng tất cả link: ${totalLinks}\n|› 📌 Reply (phản hồi) STT để check link status\n|› ✏️ Reply (phản hồi) del + STT để xóa file tương ứng`;
+
+        api.sendMessage(messageToSend, event.threadID, (error, info) => {
+          if (!error) {
+            global.client.handleReply.push({
+              type: "choosee",
+              name: module.exports.config.name,
+              author: info.senderID,
+              messageID: info.messageID,
+              dataaa: files,
+            });
+          }
+        });
+        break;
+      }
+
+      default:
+        api.sendMessage("📝 Sử dụng add, check hoặc del", event.threadID, event.messageID);
+    }
+  } catch (error) {
+    console.log(error);
+    api.sendMessage(`❎ Đã xảy ra lỗi trong quá trình thực hiện lệnh: ${error}`, event.threadID, event.messageID);
+  }
 };
-switch (_.args[0]){
-case "add":{
-var namefile = _.args.join(" ").slice(4)
-if(!namefile && !mRl){
-send("Vui lòng nhập tên file và reply link or video/image! ❎")
-} else if(!namefile){
-send("Vui lòng nhập tên file! ❎")
-} else if(!mRl){
-send("Vui lòng reply link! ❎")
-}
-if(mRl.attachments == 0){
-if(namefile){
-const regex = /(https?:\/\/[^\s]+)/g;
-const nd = mRl.body.match(regex);
-if(nd == null ) return send("Không phải link! ❎")
-if (!fse.existsSync(`${folder}${namefile}.json`)) {
-fse.writeFileSync(`${folder}${namefile}.json`, "[]");
+
+module.exports.handleReply = async function ({ event, api, handleReply }) {
+  const { threadID: tid, messageID: mid, body } = event;
+  const args = body.split(" ");
+
+  switch (handleReply.type) {
+    case 'choosee':
+      const choose = parseInt(body);
+      api.unsendMessage(handleReply.messageID);
+
+      if (!isNaN(choose)) {
+        const selectedFile = handleReply.dataaa[choose - 1];
+
+        if (!selectedFile) {
+          return api.sendMessage('❎ Lựa chọn không nằm trong danh sách!', tid, mid);
+        }
+        const filePath = path.join(global.srcapi, selectedFile);
+
+        try {
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const linksArray = JSON.parse(fileContent);
+
+          let liveCount = 0;
+          let deadCount = 0;
+
+          const chunkSize = 10;
+          const linkChunks = [];
+          for (let i = 0; i < linksArray.length; i += chunkSize) {
+            linkChunks.push(linksArray.slice(i, i + chunkSize));
+          }
+
+          const checkLinkPromises = linkChunks.map(async chunk => {
+            await Promise.all(chunk.map(async link => {
+              try {
+                const response = await axios.head(link);
+                if (response.status === 200) {
+                  liveCount++;
+                } else {
+                  deadCount++;
+                }
+              } catch (error) {
+                deadCount++;
+              }
+            }));
+          });
+
+          await Promise.all(checkLinkPromises);
+
+          if (deadCount === 0) {
+            return api.sendMessage(`✅ File ${selectedFile} không có liên kết nào die!`, tid, mid);
+          }
+
+          api.sendMessage(`|› 🗂️ Name file: ${selectedFile}\n|› 📝 Total: ${linksArray.length}\n|› ✅ Live: ${liveCount}\n|› ❎ Die: ${deadCount}\n\n──────────────────\n|› 📌 Thả cảm xúc '👍' để lọc link die\n|› ✏️ Lưu ý, trong quá trình lọc vẫn sẽ có sự khác biệt về số lượng link die so với khi check`, tid, async (error, info) => {
+            if (!error) {
+              global.client.handleReaction.push({
+                name: module.exports.config.name,
+                messageID: info.messageID,
+                author: event.senderID,
+                selectedFile: selectedFile
+              });
+            }
+          });
+        } catch (error) {
+          console.log(error);
+          api.sendMessage(`❎ Đã xảy ra lỗi trong quá trình kiểm tra file: ${error}`, tid, mid);
+        }
+      } else if (args[0] === 'del' && !isNaN(parseInt(args[1]))) {
+        try {
+          const selectedFileIndex = parseInt(args[1]) - 1;
+          const files = handleReply.dataaa;
+
+          if (selectedFileIndex < 0 || selectedFileIndex >= files.length) {
+            return api.sendMessage('❎ Lựa chọn không hợp lệ', tid, mid);
+          }
+
+          const selectedFile = files[selectedFileIndex];
+          const filePath = path.join(global.srcapi, selectedFile);
+          fs.unlinkSync(filePath);
+          api.sendMessage(`✅ Đã xóa file ${selectedFile} thành công!`, tid, mid);
+        } catch (error) {
+          console.log(error);
+          api.sendMessage(`❎ Đã xảy ra lỗi khi xóa file: ${error}`, tid, mid);
+        }
+      } else {
+        api.sendMessage("❎ Bạn không phải người dùng lệnh, vui lòng không thực hiện hành động này", tid, mid);
+      }
+      break;
+  }
 };
-nd.forEach((msg) => {
-let data = JSON.parse(fse.readFileSync(`${folder}/${namefile}.json`), "utf-8");
-data.push(msg)
-fse.writeFileSync(`${folder}${namefile}.json`, JSON.stringify(data, null, 4), "utf-8")
-})
-send(`✅ Đã up ${nd.length} link lên API`)
-}
-}
-if(mRl.attachments[0].url) {
-if(namefile){
-if (!fse.existsSync(`${folder}${namefile}.json`)) {
-fse.writeFileSync(`${folder}${namefile}.json`, "[]");
+
+module.exports.handleReaction = async ({ api, event, handleReaction }) => {
+  const { messageID, selectedFile } = handleReaction;
+  const { threadID } = event;
+
+  if (event.reaction == '👍') {
+   try {
+      api.unsendMessage(handleReaction.messageID);
+
+      const filePath = path.join(global.srcapi, selectedFile);
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const linksArray = JSON.parse(fileContent);
+
+      let liveLinks = [];
+      let deadLinks = [];
+
+      const chunkSize = 10;
+      const linkChunks = [];
+      for (let i = 0; i < linksArray.length; i += chunkSize) {
+        linkChunks.push(linksArray.slice(i, i + chunkSize));
+      }
+
+const checkLinkPromises = linkChunks.map(async chunk => {
+   await Promise.all(chunk.map(async link => {
+          try {
+            const response = await axios.head(link);
+            if (response.status === 200) {
+              liveLinks.push(link);
+            } else {
+              deadLinks.push(link);
+            }
+          } catch (error) {
+            deadLinks.push(link);
+          }
+        }));
+      });
+
+      await Promise.all(checkLinkPromises);
+
+      fs.writeFileSync(filePath, JSON.stringify(liveLinks, null, 2), 'utf-8');
+
+      api.sendMessage(`✅ Đã lọc thành công ${deadLinks.length} link die từ file ${selectedFile}`, threadID, messageID);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 };
-let data = JSON.parse(fse.readFileSync(`${folder}/${namefile}.json`), "utf-8");
-var file = []
-for(let h of(mRl.attachments || []))try {
-const ext = h.type == "photo" ? "jpg" : h.type == "video" ? "mp4" : h.type == "audio" ? "m4a" : h.type == "animated_image" ? "gif" : "txt";
-await downloadFile(h.url, __dirname + `/cache/0.${ext}`);
-file.push(__dirname + `/cache/0.${ext}`)
-} catch (e) {};
-for (i of file){
-require("imgur").setClientId("c76eb7edd1459f3");
-const link = await require("imgur").uploadFile(i)
-data.push(link.link)
-unlinkSync(i)
-}
-send(`✅ Đã up ${mRl.attachments.length} link lên API`)
-fse.writeFileSync(`${folder}${namefile}.json`, JSON.stringify(data, null, 4), "utf-8")
-}
-}
-break;
-}
-case "del":{
-try {
-unlinkSync(folder + _.args[1] + '.json');
-send("Đã xóa thành công tệp! ✅");
-} catch (e) {
-send("Không tồn tại tệp! ❎");
-}
-break;
-}
-case "rename":{
-try {
-renameSync(folder + _.args[1] + '.json', folder + _.args[2] + '.json');
-send("Đã đổi thành công tên tệp! ✅");
-} catch (e) {
-send("Không tồn tại tệp để đổi tên! ❎");
-}
-break;
-}
-case "write":{
-try{
-writeFileSync(folder + _.args[1] + '.json', '[]')
-send("Đã tạo thành công file cho bạn! ✅")
-} catch (e) {
-send("Tệp đã tồn tại! ✅");
-}
-break;
-}
-case "read":{
-try{
-send(readFileSync(folder + _.args[1] + '.json', "utf-8"))
-} catch (e) {
-send("Không thể đọc tệp bạn yêu cầu! ❎");
-}
-break;
-}
-case "list":{
-const files = readdirSync(folder)
-var msg = []
-msg = "[ Danh Sách API Hiện Có ]\n"
-files.forEach((file, index) => {
-const stats = statSync(folder + file).size;
-msg += `\n[ ${index + 1} ]. ${file} ( ${stats} bytes )`
-});
-var msgg = `\n\n API bạn tổng có: ${readdirSync(folder).length} file\n📌 Reply (phản hồi) theo STT để xem chi tiết`
-send({body:`${msg}${msgg}`, attachment: global.a.splice(0, 1)}, (err, res)=>(res.name = exports.config.name, res.author = s, res.message = m, res.type = "infoapi", res.namefolder = files, global.client.handleReply.push(res)))
-break;
-}
-default: send({ attachment: (await require("axios").get(`${global.api_url}/upload/wdpu5tlqy3.jpg`, { responseType: "stream" })).data })
-}
-}
-exports.handleReply = async function(o) {
-const { threadID: t, messageID: m, body: b, args: a, senderID: s } = o.event;
-const send = (msg,callback) => o.api.sendMessage(msg, t, callback, m)
-if (s != o.handleReply.author) return send("Cút!")
-o.api.unsendMessage(o.handleReply.message)
-switch (o.handleReply.type){
-case "infoapi": {
-try{
-send({body:`[ ${o.handleReply.namefolder[b-1]} ]\n🌐 Số link hiện có: ${JSON.parse(readFileSync(folder + o.handleReply.namefolder[b-1])).length}\n\n📌 Reply (phản hồi) tin nhắn này\nXóa -> Dùng để xóa API\nRename -> Dùng để đổi tên API\nRead -> Dùng để đọc nội dung API\nUp -> Dùng để up nội dung API lên runmocky`, attachment: global.a.splice(0, 1)},(err, res)=>(res.name = exports.config.name, res.author = s, res.message = m, res.type = "fileapi", res.namefolder = o.handleReply.namefolder[b-1], global.client.handleReply.push(res)))
-} catch (e){
-const data = JSON.stringify(readFileSync(folder + o.handleReply.namefolder[b-1], "utf-8").split("\n"))
-send({body:`[ ${o.handleReply.namefolder[b-1]} ]\n🌐 Số link hiện có: ${JSON.parse(data).length}\n\n📌 Reply (phản hồi) tin nhắn này\nXóa -> Dùng để xóa API\nRename -> Dùng để đổi tên API\nRead -> Dùng để đọc nội dung API\nUp -> Dùng để up nội dung API lên runmocky`, attachment: global.a.splice(0, 1)},(err, res)=>(res.name = exports.config.name, res.author = s, res.message = m, res.type = "fileapi", res.namefolder = o.handleReply.namefolder[b-1], global.client.handleReply.push(res)))
-}
-}
-break;
-case 'fileapi': {
-switch (a[0].toLowerCase()){
-case "read":{
-try{
-send(readFileSync(folder + o.handleReply.namefolder, "utf-8"))
-} catch (e) {
-send("Không thể đọc tệp bạn yêu cầu! ❎");
-}
-break;
-}
-case "xoá":{
-try {
-unlinkSync(folder + o.handleReply.namefolder);
-send("Đã xóa thành công tệp! ✅");
-} catch (e) {
-send("Không tồn tại tệp! ❎");
-}
-break;
-}
-case "rename":{
-try {
-renameSync(folder + o.handleReply.namefolder, folder + a[1] + '.json');
-send("Đã đổi thành công tên tệp! ✅");
-} catch (e) {
-send("Không tồn tại tệp để đổi tên! ❎");
-}
-break;
-}
-case "up": {
-const data = readFileSync(folder + o.handleReply.namefolder,"utf-8")
-const result = await require("axios").post("https://api.mocky.io/api/mock", {
-status: 200,
-content: data,
-content_type: "application/json",
-charset: "UTF-8",
-secret: "lvbang",
-expiration: "never",
-});
-send(`${result.data.link}`);
-break;
-}
-default: send({ attachment: (await require("axios").get(`${global.api_url}/upload/le161w4sb6.jpg`, { responseType: "stream" })).data })
-}
-}
-break;
-}
-}
