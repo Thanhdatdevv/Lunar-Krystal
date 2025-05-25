@@ -328,7 +328,7 @@ module.exports = function ({ api, models }) {
       if (!find_thuebot && event.body.trim() !== `${prefix}callad`) {
         if (event && event.threadID) {
           return api.shareContact(
-            `[  Thông Báo Thuê Bot  ]\n─────────────────\n❌ Nhóm của bạn chưa kích hoạt sử dụng bot, vui lòng sử dụng lệnh "${prefix}callad" để liên hệ Admin.\n─────────────────\n🌐 Facebook:`,
+            `[ 𝐓𝐇𝐎̂𝐍𝐆 𝐁𝐀́𝐎]\n─────────────────\n💢🎃 𝐧𝐡𝐨́𝐦 𝐜𝐮̉𝐚 𝐜𝐚̣̂𝐮 𝐜𝐡𝐮̛𝐚 𝐜𝐨́ 𝐫𝐞𝐧𝐭 \n"${prefix} 𝐂𝐚𝐥𝐥𝐚𝐝 đ𝐞̂̉ 𝐤𝐞̂𝐡 𝐫𝐞𝐧𝐭 𝐧𝐞̀\n─────────────────\n🌐 Facebook:`,
             global.config.ADMINBOT[0],
             event.threadID,
           );
@@ -362,7 +362,7 @@ module.exports = function ({ api, models }) {
       if (day != day_now) {
         day = day_now;
         const checkttData = fs.readdirSync(checkttDataPath);
-        console.log("--> CHECKTT: Ngày Mới");
+        console.log("--> CHECK TƯƠNG TÁC NGÀY MỚI");
         checkttData.forEach(async (checkttFile) => {
           const checktt = JSON.parse(
             fs.readFileSync(checkttDataPath + checkttFile),
@@ -385,7 +385,7 @@ module.exports = function ({ api, models }) {
               return a.name.localeCompare(b.name);
             }
           });
-          let checkttBody = "[ Top 20 Tương Tác Ngày ]\n─────────────────\n";
+          let checkttBody = "[ 𝚃𝙾𝙿 𝟸𝟶 𝙽𝙷𝚄̛̃𝙽𝙶 𝙱𝙰̣𝙽 𝙽𝙾́𝙸 𝙽𝙷𝙸𝙴̂̀𝚄 𝙽𝙷𝙰̂́𝚃]\n─────────────────\n";
           checkttBody += storage
             .slice(0, 20)
             .map((item) => {
@@ -393,7 +393,7 @@ module.exports = function ({ api, models }) {
             })
             .join("\n");
           api.sendMessage(
-            `${checkttBody}\n─────────────────\nTổng tin nhắn trong ngày: ${storage.reduce((a, b) => a + b.count, 0)} tin\n⚡ Các bạn khác cố gắng tương tác nếu muốn lên top nha :3`,
+            `${checkttBody}\n─────────────────\n 𝙽𝙶𝙰̀𝚈 𝙷𝙾̂𝙼 𝙽𝙰𝚈 𝙲𝙾́ 𝙼𝙰̂𝚈𝚉 𝙱𝙰̣𝙽 𝙽𝙰̀𝚈 𝙻𝙰̆́𝙼 𝙼𝙾̂̀𝙼 𝙽𝙴̀: ${storage.reduce((a, b) => a + b.count, 0)} 𝚃in\n 𝙲𝙰́𝙲 𝙱𝙰̣𝙽 𝙽𝙷𝙾̛𝚉 𝙲𝙷𝙰̆𝙼 𝚃𝚃 Đ𝙴̂̉ 𝙻𝙴̂𝙽 𝚃𝙾𝙿:3`,
             checkttFile.replace(".json", ""),
             (err) => (err ? logger(err) : ""),
           );
