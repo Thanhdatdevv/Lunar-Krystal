@@ -67,7 +67,23 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
         }
       }
     }
-    const [matched Prefix] = body.match(prefix Regex), args = body.slice(matched Prefix.length).trim().split(/ +/); commandName = args.shift().toLowerCase(); var command = commands.get(commandName); fs.writeFileSync(usgPath, JSON.stringify(usages, null, 4)); if (!command) { var allCommandName = []; const commandValues = global.client.commands.keys(); for (const cmd of commandValues) allCommandName.push(cmd); const checker = stringSimilarity.findBestMatch(commandName, allCommandName); var gio = moment.tz("Asia/Ho_Chi_Minh").format("D/MM/YYYY || HH:mm:ss"); if (checker.bestMatch.rating >= 0.5) command = global.client.commands.get(checker.bestMatch.target); else return api.sendMessage({body:`==[🎃💢${global.config.BOTNAME}]\n 𝐂𝐇𝐀̀𝐎 𝐁𝐀̣𝐍\nĐ𝐚̃ 𝐝𝐮̀𝐧𝐠 𝐬𝐚𝐢 𝐥𝐞̣̂𝐧𝐡❌\n✅🎃 𝐋𝐄̣̂𝐍𝐇 𝐆𝐀̂̀̂̀𝐍 Đ𝐔́𝐍𝐆 𝐋𝐀̀:${checker.bestMatch.target}\n─────────────────\n𝐓𝐡𝐨̛̀𝐢 𝐆𝐢𝐚𝐧 𝐧𝐚̃𝐲 𝐠𝐢𝐨̛̀ 𝐛𝐨𝐭 𝐨𝐧𝐥 :${hours}:${minutes}:${seconds}\n⏰ 𝐓𝐈𝐌𝐄: ${gio}`, attachment: global.krystal.splice(0, 1)}, threadID, messageID); }
+
+    const [matchedPrefix] = body.match(prefixRegex),
+          args = body.slice(matchedPrefix.length).trim().split(/ +/);
+    commandName = args.shift().toLowerCase();
+    var command = commands.get(commandName);
+    fs.writeFileSync(usgPath, JSON.stringify(usages, null, 4));
+
+    if (!command) {
+      var allCommandName = [];
+      const commandValues = global.client.commands.keys();
+
+      for (const cmd of commandValues) allCommandName.push(cmd);
+      const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
+      var gio = moment.tz("Asia/Ho_Chi_Minh").format("D/MM/YYYY || HH:mm:ss");
+      if (checker.bestMatch.rating >= 0.5) command = global.client.commands.get(checker.bestMatch.target);
+      else return api.sendMessage({body:`[ 🌌${global.config.BOTNAME}✨ ]\n🚫🦖𝙎𝘼𝙄 𝙇𝙀̣̂𝙉𝙃!\n✅🦖 Đ𝘼̂𝙔 𝙇𝘼̀ 𝙇𝙀̣̂𝙉𝙃 𝙂𝘼̂̀𝙉 𝙂𝙄𝙊̂́𝙉𝙂: ${checker.bestMatch.target}\n─────────────────\n🎶🌌𝘽𝙊𝙏 𝙊𝙉𝙇𝙄𝙉𝙀: ${hours}:${minutes}:${seconds}\n⏰🦖𝙏𝙄𝙈𝙀: ${gio}`, attachment: global.krystal.splice(0, 1)}, threadID, messageID);
+    }
     if (commandBanned.get(threadID) || commandBanned.get(senderID)) {
       if (!ADMINBOT.includes(senderID)) {
         const banThreads = commandBanned.get(threadID) || [],
